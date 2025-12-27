@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tetris Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            /* Nutzt Telegram Theme Farben falls vorhanden */
+            --bg-color: var(--tg-theme-bg-color, #222);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #999);
+            --button-color: var(--tg-theme-button-color, #4caf50);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+        }
+
+        body { 
+            background: var(--bg-color);
+            background: radial-gradient(circle, #333, #000);
+            color: var(--text-color); 
+            font-family: sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Hauptmenü Overlay */
+        #menu-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .menu-card {
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            width: 85%;
+            max-width: 300px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .start-btn {
+            background: var(--button-color);
+            color: var(--button-text);
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* Spiel-UI */
+        .canvas-container { position: relative; margin-top: 10px; }
+        canvas#t { border: 4px solid #444; background: #000; border-radius: 8px; max-height: 50vh; }
+        
+        #next-container {
+            position: absolute;
+            top: 10px;
+            right: -65px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #fff;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .header-box { margin-top: 10px; font-size: 1.1em; font-weight: bold; }
+        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; width: 100%; max-width: 400px; box-sizing: border-box; }
+        .game-btn { background: #444; color: white; border: none; height: 60px; font-size: 24px; border-radius: 12px; touch-action: manipulation; }
+        
+        .hidden { display: none !important; }
+        #menu-hs-list { list-style: none; padding: 0; font-size: 0.8em; text-align: left; margin-top: 10px; }
+        #menu-hs-list li { border-bottom: 1px solid #ddd; padding: 4px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+    <div id="menu-overlay">
+        <div class="menu-card">
+            <h1 style="margin:0; color:#444;">TG-TETRIS</h1>
+            <input type="text" id="player-name" placeholder="Name">
+            <select id="speed-select">
+                <option value="1000">Lauch</option>
+                <option value="700" selected>Normal</option>
+                <option value="400">Profi</option>
+                <option value="150">Legendär</option>
+            </select>
+            <button class="start-btn" onclick="startGame()">JETZT SPIELEN</button>
+            
+            <div style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
+                <strong>🏆 Highscores</strong>
+                <ul id="menu-hs-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-box">Score: <span id="s">0</span> | <span id="cur-lvl">-</span></div>
+
+    <div class="canvas-container">
+        <canvas id="t" width="240" height="400"></canvas>
+        <div id="next-container">
+            <div style="font-size:9px;">NEXT</div>
+            <canvas id="nextCanvas" width="40" height="40"></canvas>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="game-btn" onclick="pRotate()" style="background:#6a1b9a;">↻</button>
+        <button class="game-btn" onclick="pDrop()">↓</button>
+        <button class="game-btn" onclick="pRotate()" style="background:#c62828;">↻</button>
+        <button class="game-btn" onclick="pMove(-1)">←</button>
+        <button class="game-btn" onclick="location.reload()">🏠</button>
+        <button class="game-btn" onclick="pMove(1)">→</button>
+    </div>
+
+<script>
+    // --- TELEGRAM INTEGRATION ---
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Fenster auf volle Größe ziehen
+    tg.ready();
+
+    const nameInput = document.getElementById('player-name');
+    
+    // Namen aus Telegram User-Daten setzen
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        nameInput.value = tg.initDataUnsafe.user.first_name;
+    }
+
+    // --- TETRIS LOGIK ---
+    const canvas = document.getElementById('t');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextCanvas');
+    const nctx = nextCanvas.getContext('2d');
+    const scoreEl = document.getElementById('s');
+    const speedSelect = document.getElementById('speed-select');
+    const lvlDisplay = document.getElementById('cur-lvl');
+
+    ctx.scale(20, 20);
+    nctx.scale(10, 10);
+
+    const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+    const PIECES = 'ILJOTSZ';
+
+    let arena = createMat(12, 20);
+    let player = { pos: {x: 0, y: 0}, mat: null, name: "" };
+    let nextPieceMat = null;
+    let score = 0;
+    let paused = true;
+    let dropInterval = 800;
+    let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
+
+    function startGame() {
+        player.name = nameInput.value || "Spieler";
+        dropInterval = parseInt(speedSelect.value);
+        lvlDisplay.innerText = speedSelect.options[speedSelect.selectedIndex].text;
+        document.getElementById('menu-overlay').classList.add('hidden');
+        paused = false;
+        nextPieceMat = createPiece(PIECES[Math.random() * PIECES.length | 0]);
+        pReset();
+        update();
+    }
+
+    function createPiece(type) {
+        if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
+        if (type === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
+        if (type === 'J') return [[0,3,0],[0,3,0],[3,3,0]];
+        if (type === 'O') return [[4,4],[4,4]];
+        if (type === 'T') return [[0,5,0],[5,5,5],[0,0,0]];
+        if (type === 'S') return [[0,6,6],[6,6,0],[0,0,0]];
+        if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
+    }
+
+    function createMat(w, h) {
+        const mat = [];
+        while (h--) mat.push(new Array(w).fill(0));
+        return mat;
+    }
+
+    function draw() {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawMat(ctx, arena, {x: 0, y: 0});
+        drawMat(ctx, player.mat, player.pos);
+        
+        nctx.fillStyle = '#000';
+        nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+        drawMat(nctx, nextPieceMat, {x: 0.5, y: 0.5});
+    }
+
+    function drawMat(context, mat, pos) {
+        mat.forEach((row, y) => {
+            row.forEach((val, x) => {
+                if (val !== 0) {
+                    context.fillStyle = COLORS[val];
+                    context.fillRect(x + pos.x, y + pos.y, 1, 1);
+                }
+            });
+        });
+    }
+
+    function pDrop() {
+        if (paused) return;
+        player.pos.y++;
+        if (collide(arena, player)) {
+            player.pos.y--;
+            merge(arena, player);
+            pReset();
+            arenaSweep();
+        }
+        dropCount = 0;
+    }
+
+    function pMove(dir) {
+        if (paused) return;
+        player.pos.x += dir;
+        if (collide(arena, player)) player.pos.x -= dir;
+    }
+
+    function pRotate() {
+        if (paused) return;
+        const mat = player.mat;
+        for (let y = 0; y < mat.length; ++y) {
+            for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
+        }
+        mat.forEach(row => row.reverse());
+        if (collide(arena, player)) {
+             mat.forEach(row => row.reverse());
+             for (let y = 0; y < mat.length; ++y) {
+                for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
+            }
+        }
+    }
+
+    function collide(arena, player) {
+        const [m, o] = [player.mat, player.pos];
+        for (let y = 0; y < m.length; ++y) {
+            for (let x = 0; x < m[y].length; ++x) {
+                if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) return true;
+            }
+        }
+        return false;
+    }
+
+    function merge(arena, player) {
+        player.mat.forEach((row, y) => {
+            row.forEach((val, x) => {
+                if (val !== 0) arena[y + player.pos.y][x + player.pos.x] = val;
+            });
+        });
+    }
+
+    function pReset() {
+        player.mat = nextPieceMat;
+        nextPieceMat = createPiece(PIECES[Math.random() * PIECES.length | 0]);
+        player.pos.y = 0;
+        player.pos.x = (arena[0].length / 2 | 0) - (player.mat[0].length / 2 | 0);
+        
+        if (collide(arena, player)) {
+            paused = true;
+            saveScore();
+            tg.HapticFeedback.notificationOccurred('error'); // Vibration bei Game Over
+            alert("GAME OVER! Score: " + score);
+            location.reload();
+        }
+    }
+
+    function saveScore() {
+        if (score > 0) {
+            highscores.push({name: player.name, score: score, level: lvlDisplay.innerText});
+            highscores.sort((a,b) => b.score - a.score).splice(5);
+            localStorage.setItem('tetrisHS_v4', JSON.stringify(highscores));
+        }
+    }
+
+    function arenaSweep() {
+        let rows = 0;
+        outer: for (let y = arena.length - 1; y > 0; --y) {
+            for (let x = 0; x < arena[y].length; ++x) {
+                if (arena[y][x] === 0) continue outer;
+            }
+            arena.splice(y, 1);
+            arena.unshift(new Array(12).fill(0));
+            ++y; rows++;
+        }
+        if (rows > 0) { 
+            score += rows * 10; 
+            scoreEl.innerText = score;
+            tg.HapticFeedback.impactOccurred('medium'); // Vibration beim Punktemachen
+        }
+    }
+
+    let dropCount = 0;
+    let lastTime = 0;
+    function update(time = 0) {
+        if (paused) return;
+        const dt = time - lastTime;
+        lastTime = time;
+        dropCount += dt;
+        if (dropCount > dropInterval) pDrop();
+        draw();
+        requestAnimationFrame(update);
+    }
+
+    // Highscores befüllen
+    document.getElementById('menu-hs-list').innerHTML = highscores.map(e => 
+        `<li><b>${e.name}</b> <span>${e.score} (${e.level})</span></li>`).join('') || "<li>Noch kein Record</li>";
+</script>
+</body>
+</html>
