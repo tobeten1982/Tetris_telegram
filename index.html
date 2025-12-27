@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tetris Telegram Premium</title>
+    <title>Tetris Telegram - Speed & Bonus Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -17,12 +17,11 @@
             background: var(--tg-bg);
             background: radial-gradient(circle, #333, #000);
             color: var(--tg-text); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: sans-serif; 
             text-align: center; margin: 0; height: 100vh;
             display: flex; flex-direction: column; align-items: center; overflow: hidden;
         }
 
-        /* Hauptmenü Overlay */
         #menu-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 100;
@@ -34,20 +33,13 @@
             width: 80%; max-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        .menu-card h2 { margin: 0 0 15px 0; font-size: 1.4em; color: #333; }
-
-        /* Festgeschriebener Name Style */
         .name-badge {
             background: #f0f0f0; border: 2px solid #ddd; padding: 12px;
             border-radius: 10px; font-weight: bold; color: #555;
-            margin-bottom: 20px; display: block; font-size: 1.1em;
-            pointer-events: none; /* Verhindert Klicks */
+            margin-bottom: 15px; display: block;
         }
 
-        select {
-            width: 100%; padding: 12px; margin-bottom: 20px;
-            border-radius: 10px; border: 1px solid #ccc; font-size: 16px;
-        }
+        select { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 10px; font-size: 16px; }
 
         .start-btn {
             background: var(--tg-btn); color: var(--tg-btn-text);
@@ -55,54 +47,47 @@
             font-weight: bold; font-size: 1.1em; cursor: pointer;
         }
 
-        /* Spielfeld */
-        .canvas-container { position: relative; margin-top: 15px; }
-        canvas#t { border: 4px solid #555; background: #000; border-radius: 10px; max-height: 45vh; }
+        .header-box { margin-top: 10px; font-weight: bold; font-size: 0.9em; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 15px; border: 1px solid #555; }
+        .canvas-container { position: relative; margin-top: 10px; }
+        canvas#t { border: 4px solid #444; background: #000; border-radius: 10px; max-height: 45vh; }
         
         #next-container {
-            position: absolute; top: 5px; right: -65px;
+            position: absolute; top: 5px; right: -60px;
             background: rgba(0,0,0,0.8); border: 1px solid #fff;
             padding: 5px; border-radius: 8px;
         }
 
-        .header-box { margin-top: 10px; font-weight: bold; font-size: 1.1em; }
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; width: 100%; max-width: 400px; box-sizing: border-box; }
-        .game-btn { background: #333; color: white; border: none; height: 65px; font-size: 26px; border-radius: 15px; touch-action: manipulation; }
+        .game-btn { background: #333; color: white; border: none; height: 60px; font-size: 24px; border-radius: 15px; touch-action: manipulation; }
         
         .hidden { display: none !important; }
-        #menu-hs-list { list-style: none; padding: 0; font-size: 0.85em; text-align: left; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;}
-        #menu-hs-list li { padding: 5px 0; display: flex; justify-content: space-between; border-bottom: 1px solid #f9f9f9; }
+        #menu-hs-list { list-style: none; padding: 0; font-size: 0.8em; text-align: left; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;}
     </style>
 </head>
 <body>
 
     <div id="menu-overlay">
         <div class="menu-card">
-            <h2>Willkommen</h2>
-            <label style="font-size: 0.8em; color: #888;">DEIN PROFIL:</label>
+            <h2 style="margin-top:0;">TG Tetris</h2>
             <div id="player-name-display" class="name-badge">Lädt...</div>
-            
-            <label style="font-size: 0.8em; color: #888;">SCHWIERIGKEIT:</label>
             <select id="speed-select">
-                <option value="1000">Lauch</option>
-                <option value="700" selected>Normal</option>
-                <option value="400">Profi</option>
-                <option value="150">Legendär</option>
+                <option value="1000">Lauch (Langsam)</option>
+                <option value="750" selected>Normal</option>
+                <option value="450">Profi (Schnell)</option>
             </select>
-            
             <button class="start-btn" onclick="startGame()">SPIEL STARTEN</button>
-            
             <ul id="menu-hs-list"></ul>
         </div>
     </div>
 
-    <div class="header-box">Score: <span id="s">0</span> | <span id="cur-lvl">-</span></div>
+    <div class="header-box">
+        Score: <span id="s">0</span> | Steine: <span id="p-count">0</span>/20
+    </div>
 
     <div class="canvas-container">
         <canvas id="t" width="240" height="400"></canvas>
         <div id="next-container">
-            <div style="font-size:9px; color: #aaa;">NEXT</div>
-            <canvas id="nextCanvas" width="45" height="45"></canvas>
+            <canvas id="nextCanvas" width="40" height="40"></canvas>
         </div>
     </div>
 
@@ -116,30 +101,21 @@
     </div>
 
 <script>
-    // --- TELEGRAM LOGIK ---
     const tg = window.Telegram.WebApp;
     tg.expand();
     tg.ready();
 
     let currentPlayerName = "Gast";
-    const nameDisplay = document.getElementById('player-name-display');
-
-    // Identität feststellen
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        const user = tg.initDataUnsafe.user;
-        currentPlayerName = (user.first_name + (user.last_name ? " " + user.last_name : "")).trim();
+        currentPlayerName = tg.initDataUnsafe.user.first_name;
     }
-    nameDisplay.innerText = currentPlayerName;
+    document.getElementById('player-name-display').innerText = currentPlayerName;
 
-    // --- TETRIS ENGINE ---
     const canvas = document.getElementById('t');
     const ctx = canvas.getContext('2d');
     const nextCanvas = document.getElementById('nextCanvas');
     const nctx = nextCanvas.getContext('2d');
-    const scoreEl = document.getElementById('s');
-    const speedSelect = document.getElementById('speed-select');
-    const lvlDisplay = document.getElementById('cur-lvl');
-
+    
     ctx.scale(20, 20);
     nctx.scale(10, 10);
 
@@ -152,20 +128,13 @@
     let score = 0;
     let paused = true;
     let dropInterval = 800;
-    let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
+    let dropCount = 0;
+    let lastTime = 0;
+    
+    // NEU: Zähler für Beschleunigung
+    let pieceCount = 0;
+    const PIECES_PER_LEVEL = 20;
 
-    function startGame() {
-        player.name = currentPlayerName; // Name fest übernehmen
-        dropInterval = parseInt(speedSelect.value);
-        lvlDisplay.innerText = speedSelect.options[speedSelect.selectedIndex].text;
-        document.getElementById('menu-overlay').classList.add('hidden');
-        paused = false;
-        nextPieceMat = createPiece(PIECES[Math.random() * PIECES.length | 0]);
-        pReset();
-        update();
-    }
-
-    // (Hier folgen die Standard-Tetris-Funktionen wie in den Vorversionen...)
     function createPiece(type) {
         if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if (type === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
@@ -204,36 +173,46 @@
         });
     }
 
-    function pDrop() {
-        if (paused) return;
-        player.pos.y++;
-        if (collide(arena, player)) {
-            player.pos.y--;
-            merge(arena, player);
-            pReset();
-            arenaSweep();
-        }
-        dropCount = 0;
-    }
+    function merge(arena, player) {
+        player.mat.forEach((row, y) => {
+            row.forEach((val, x) => {
+                if (val !== 0) arena[y + player.pos.y][x + player.pos.x] = val;
+            });
+        });
 
-    function pMove(dir) {
-        if (paused) return;
-        player.pos.x += dir;
-        if (collide(arena, player)) player.pos.x -= dir;
-    }
-
-    function pRotate() {
-        if (paused) return;
-        const mat = player.mat;
-        for (let y = 0; y < mat.length; ++y) {
-            for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
-        }
-        mat.forEach(row => row.reverse());
-        if (collide(arena, player)) {
-            mat.forEach(row => row.reverse());
-            for (let y = 0; y < mat.length; ++y) {
-                for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
+        // Beschleunigungs-Logik
+        pieceCount++;
+        if (pieceCount >= PIECES_PER_LEVEL) {
+            pieceCount = 0;
+            if (dropInterval > 120) {
+                dropInterval *= 0.9; // 10% schneller
+                tg.HapticFeedback.notificationOccurred('success'); // Feedback bei Speed-Up
             }
+        }
+        document.getElementById('p-count').innerText = pieceCount;
+    }
+
+    function arenaSweep() {
+        let rowCount = 0;
+        outer: for (let y = arena.length - 1; y > 0; --y) {
+            for (let x = 0; x < arena[y].length; ++x) {
+                if (arena[y][x] === 0) continue outer;
+            }
+            const row = arena.splice(y, 1)[0].fill(0);
+            arena.unshift(row);
+            ++y;
+            rowCount++;
+        }
+
+        if (rowCount > 0) {
+            // NEU: Bonus-Punktesystem
+            const bonus = [0, 10, 30, 50, 200]; // 0, 1, 2, 3, 4 Reihen
+            score += bonus[rowCount];
+            document.getElementById('s').innerText = score;
+            
+            // Haptisches Feedback je nach Stärke
+            if (rowCount === 4) tg.HapticFeedback.notificationOccurred('warning');
+            else tg.HapticFeedback.impactOccurred('medium');
         }
     }
 
@@ -247,55 +226,59 @@
         return false;
     }
 
-    function merge(arena, player) {
-        player.mat.forEach((row, y) => {
-            row.forEach((val, x) => {
-                if (val !== 0) arena[y + player.pos.y][x + player.pos.x] = val;
-            });
-        });
+    function pRotate() {
+        const pos = player.pos.x;
+        let offset = 1;
+        const mat = player.mat;
+        for (let y = 0; y < mat.length; ++y) {
+            for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
+        }
+        mat.forEach(row => row.reverse());
+        while (collide(arena, player)) {
+            player.pos.x += offset;
+            offset = -(offset + (offset > 0 ? 1 : -1));
+            if (offset > player.mat[0].length) {
+                // Rotation rückgängig machen wenn kein Platz
+                mat.forEach(row => row.reverse());
+                for (let y = 0; y < mat.length; ++y) {
+                    for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
+                }
+                player.pos.x = pos;
+                return;
+            }
+        }
+    }
+
+    function pDrop() {
+        player.pos.y++;
+        if (collide(arena, player)) {
+            player.pos.y--;
+            merge(arena, player);
+            pReset();
+            arenaSweep();
+        }
+        dropCount = 0;
+    }
+
+    function pMove(dir) {
+        player.pos.x += dir;
+        if (collide(arena, player)) player.pos.x -= dir;
     }
 
     function pReset() {
-        player.mat = nextPieceMat;
+        player.mat = nextPieceMat || createPiece(PIECES[Math.random() * PIECES.length | 0]);
         nextPieceMat = createPiece(PIECES[Math.random() * PIECES.length | 0]);
         player.pos.y = 0;
         player.pos.x = (arena[0].length / 2 | 0) - (player.mat[0].length / 2 | 0);
         
         if (collide(arena, player)) {
             paused = true;
-            saveScore();
             tg.HapticFeedback.notificationOccurred('error');
-            alert("GAME OVER!\nScore: " + score);
+            alert("GAME OVER! Score: " + score);
             location.reload();
         }
     }
 
-    function saveScore() {
-        if (score > 0) {
-            highscores.push({name: player.name, score: score, level: lvlDisplay.innerText});
-            highscores.sort((a,b) => b.score - a.score).splice(5);
-            localStorage.setItem('tetrisHS_v4', JSON.stringify(highscores));
-        }
-    }
-
-    function arenaSweep() {
-        let rows = 0;
-        outer: for (let y = arena.length - 1; y > 0; --y) {
-            for (let x = 0; x < arena[y].length; ++x) {
-                if (arena[y][x] === 0) continue outer;
-            }
-            arena.splice(y, 1);
-            arena.unshift(new Array(12).fill(0));
-            ++y; rows++;
-        }
-        if (rows > 0) { 
-            score += rows * 10; scoreEl.innerText = score;
-            tg.HapticFeedback.impactOccurred('light');
-        }
-    }
-
-    let dropCount = 0;
-    let lastTime = 0;
     function update(time = 0) {
         if (paused) return;
         const dt = time - lastTime;
@@ -306,8 +289,14 @@
         requestAnimationFrame(update);
     }
 
-    document.getElementById('menu-hs-list').innerHTML = highscores.map(e => 
-        `<li><b>${e.name}</b> <span>${e.score}</span></li>`).join('') || "<li>Keine Records</li>";
+    function startGame() {
+        player.name = currentPlayerName;
+        dropInterval = parseInt(document.getElementById('speed-select').value);
+        document.getElementById('menu-overlay').classList.add('hidden');
+        paused = false;
+        pReset();
+        update();
+    }
 </script>
 </body>
 </html>
