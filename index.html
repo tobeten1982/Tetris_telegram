@@ -3,116 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tetris Telegram Mini App</title>
+    <title>Tetris Telegram Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Nutzt Telegram Theme Farben falls vorhanden */
-            --bg-color: var(--tg-theme-bg-color, #222);
-            --text-color: var(--tg-theme-text-color, #ffffff);
-            --hint-color: var(--tg-theme-hint-color, #999);
-            --button-color: var(--tg-theme-button-color, #4caf50);
-            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --tg-bg: var(--tg-theme-bg-color, #222);
+            --tg-text: var(--tg-theme-text-color, #ffffff);
+            --tg-btn: var(--tg-theme-button-color, #4caf50);
+            --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
         }
 
         body { 
-            background: var(--bg-color);
+            background: var(--tg-bg);
             background: radial-gradient(circle, #333, #000);
-            color: var(--text-color); 
-            font-family: sans-serif; 
-            text-align: center; 
-            margin: 0; 
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow: hidden;
+            color: var(--tg-text); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; margin: 0; height: 100vh;
+            display: flex; flex-direction: column; align-items: center; overflow: hidden;
         }
 
         /* Hauptmenü Overlay */
         #menu-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
         .menu-card {
-            background: #fff;
-            color: #333;
-            padding: 20px;
-            border-radius: 15px;
-            width: 85%;
-            max-width: 300px;
+            background: #fff; color: #333; padding: 25px; border-radius: 20px;
+            width: 80%; max-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-            font-size: 16px;
+        .menu-card h2 { margin: 0 0 15px 0; font-size: 1.4em; color: #333; }
+
+        /* Festgeschriebener Name Style */
+        .name-badge {
+            background: #f0f0f0; border: 2px solid #ddd; padding: 12px;
+            border-radius: 10px; font-weight: bold; color: #555;
+            margin-bottom: 20px; display: block; font-size: 1.1em;
+            pointer-events: none; /* Verhindert Klicks */
+        }
+
+        select {
+            width: 100%; padding: 12px; margin-bottom: 20px;
+            border-radius: 10px; border: 1px solid #ccc; font-size: 16px;
         }
 
         .start-btn {
-            background: var(--button-color);
-            color: var(--button-text);
-            border: none;
-            padding: 15px;
-            width: 100%;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
+            background: var(--tg-btn); color: var(--tg-btn-text);
+            border: none; padding: 18px; width: 100%; border-radius: 12px;
+            font-weight: bold; font-size: 1.1em; cursor: pointer;
         }
 
-        /* Spiel-UI */
-        .canvas-container { position: relative; margin-top: 10px; }
-        canvas#t { border: 4px solid #444; background: #000; border-radius: 8px; max-height: 50vh; }
+        /* Spielfeld */
+        .canvas-container { position: relative; margin-top: 15px; }
+        canvas#t { border: 4px solid #555; background: #000; border-radius: 10px; max-height: 45vh; }
         
         #next-container {
-            position: absolute;
-            top: 10px;
-            right: -65px;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid #fff;
-            padding: 5px;
-            border-radius: 5px;
+            position: absolute; top: 5px; right: -65px;
+            background: rgba(0,0,0,0.8); border: 1px solid #fff;
+            padding: 5px; border-radius: 8px;
         }
 
-        .header-box { margin-top: 10px; font-size: 1.1em; font-weight: bold; }
+        .header-box { margin-top: 10px; font-weight: bold; font-size: 1.1em; }
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; width: 100%; max-width: 400px; box-sizing: border-box; }
-        .game-btn { background: #444; color: white; border: none; height: 60px; font-size: 24px; border-radius: 12px; touch-action: manipulation; }
+        .game-btn { background: #333; color: white; border: none; height: 65px; font-size: 26px; border-radius: 15px; touch-action: manipulation; }
         
         .hidden { display: none !important; }
-        #menu-hs-list { list-style: none; padding: 0; font-size: 0.8em; text-align: left; margin-top: 10px; }
-        #menu-hs-list li { border-bottom: 1px solid #ddd; padding: 4px 0; display: flex; justify-content: space-between; }
+        #menu-hs-list { list-style: none; padding: 0; font-size: 0.85em; text-align: left; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;}
+        #menu-hs-list li { padding: 5px 0; display: flex; justify-content: space-between; border-bottom: 1px solid #f9f9f9; }
     </style>
 </head>
 <body>
 
     <div id="menu-overlay">
         <div class="menu-card">
-            <h1 style="margin:0; color:#444;">TG-TETRIS</h1>
-            <input type="text" id="player-name" placeholder="Name">
+            <h2>Willkommen</h2>
+            <label style="font-size: 0.8em; color: #888;">DEIN PROFIL:</label>
+            <div id="player-name-display" class="name-badge">Lädt...</div>
+            
+            <label style="font-size: 0.8em; color: #888;">SCHWIERIGKEIT:</label>
             <select id="speed-select">
                 <option value="1000">Lauch</option>
                 <option value="700" selected>Normal</option>
                 <option value="400">Profi</option>
                 <option value="150">Legendär</option>
             </select>
-            <button class="start-btn" onclick="startGame()">JETZT SPIELEN</button>
             
-            <div style="margin-top:15px; border-top: 1px solid #eee; padding-top:10px;">
-                <strong>🏆 Highscores</strong>
-                <ul id="menu-hs-list"></ul>
-            </div>
+            <button class="start-btn" onclick="startGame()">SPIEL STARTEN</button>
+            
+            <ul id="menu-hs-list"></ul>
         </div>
     </div>
 
@@ -121,8 +101,8 @@
     <div class="canvas-container">
         <canvas id="t" width="240" height="400"></canvas>
         <div id="next-container">
-            <div style="font-size:9px;">NEXT</div>
-            <canvas id="nextCanvas" width="40" height="40"></canvas>
+            <div style="font-size:9px; color: #aaa;">NEXT</div>
+            <canvas id="nextCanvas" width="45" height="45"></canvas>
         </div>
     </div>
 
@@ -136,19 +116,22 @@
     </div>
 
 <script>
-    // --- TELEGRAM INTEGRATION ---
+    // --- TELEGRAM LOGIK ---
     const tg = window.Telegram.WebApp;
-    tg.expand(); // Fenster auf volle Größe ziehen
+    tg.expand();
     tg.ready();
 
-    const nameInput = document.getElementById('player-name');
-    
-    // Namen aus Telegram User-Daten setzen
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        nameInput.value = tg.initDataUnsafe.user.first_name;
-    }
+    let currentPlayerName = "Gast";
+    const nameDisplay = document.getElementById('player-name-display');
 
-    // --- TETRIS LOGIK ---
+    // Identität feststellen
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        const user = tg.initDataUnsafe.user;
+        currentPlayerName = (user.first_name + (user.last_name ? " " + user.last_name : "")).trim();
+    }
+    nameDisplay.innerText = currentPlayerName;
+
+    // --- TETRIS ENGINE ---
     const canvas = document.getElementById('t');
     const ctx = canvas.getContext('2d');
     const nextCanvas = document.getElementById('nextCanvas');
@@ -172,7 +155,7 @@
     let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
 
     function startGame() {
-        player.name = nameInput.value || "Spieler";
+        player.name = currentPlayerName; // Name fest übernehmen
         dropInterval = parseInt(speedSelect.value);
         lvlDisplay.innerText = speedSelect.options[speedSelect.selectedIndex].text;
         document.getElementById('menu-overlay').classList.add('hidden');
@@ -182,6 +165,7 @@
         update();
     }
 
+    // (Hier folgen die Standard-Tetris-Funktionen wie in den Vorversionen...)
     function createPiece(type) {
         if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if (type === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
@@ -246,8 +230,8 @@
         }
         mat.forEach(row => row.reverse());
         if (collide(arena, player)) {
-             mat.forEach(row => row.reverse());
-             for (let y = 0; y < mat.length; ++y) {
+            mat.forEach(row => row.reverse());
+            for (let y = 0; y < mat.length; ++y) {
                 for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
             }
         }
@@ -280,8 +264,8 @@
         if (collide(arena, player)) {
             paused = true;
             saveScore();
-            tg.HapticFeedback.notificationOccurred('error'); // Vibration bei Game Over
-            alert("GAME OVER! Score: " + score);
+            tg.HapticFeedback.notificationOccurred('error');
+            alert("GAME OVER!\nScore: " + score);
             location.reload();
         }
     }
@@ -305,9 +289,8 @@
             ++y; rows++;
         }
         if (rows > 0) { 
-            score += rows * 10; 
-            scoreEl.innerText = score;
-            tg.HapticFeedback.impactOccurred('medium'); // Vibration beim Punktemachen
+            score += rows * 10; scoreEl.innerText = score;
+            tg.HapticFeedback.impactOccurred('light');
         }
     }
 
@@ -323,9 +306,8 @@
         requestAnimationFrame(update);
     }
 
-    // Highscores befüllen
     document.getElementById('menu-hs-list').innerHTML = highscores.map(e => 
-        `<li><b>${e.name}</b> <span>${e.score} (${e.level})</span></li>`).join('') || "<li>Noch kein Record</li>";
+        `<li><b>${e.name}</b> <span>${e.score}</span></li>`).join('') || "<li>Keine Records</li>";
 </script>
 </body>
 </html>
