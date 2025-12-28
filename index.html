@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tetris Telegram - Speed & Bonus Edition</title>
+    <title>Tetris Telegram - Highscore Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -36,16 +36,25 @@
         .name-badge {
             background: #f0f0f0; border: 2px solid #ddd; padding: 12px;
             border-radius: 10px; font-weight: bold; color: #555;
-            margin-bottom: 15px; display: block;
+            margin-bottom: 10px; display: block;
         }
 
-        select { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 10px; font-size: 16px; }
+        select { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; font-size: 16px; }
 
         .start-btn {
             background: var(--tg-btn); color: var(--tg-btn-text);
             border: none; padding: 18px; width: 100%; border-radius: 12px;
             font-weight: bold; font-size: 1.1em; cursor: pointer;
         }
+
+        /* Highscore Liste im Menü */
+        #highscore-container {
+            margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 10px;
+        }
+        #highscore-container h3 { margin: 0 0 10px 0; font-size: 0.9em; color: #888; text-transform: uppercase; }
+        #menu-hs-list { list-style: none; padding: 0; margin: 0; font-size: 0.85em; }
+        #menu-hs-list li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f5f5f5; }
+        #menu-hs-list li:last-child { border: none; }
 
         .header-box { margin-top: 10px; font-weight: bold; font-size: 0.9em; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 15px; border: 1px solid #555; }
         .canvas-container { position: relative; margin-top: 10px; }
@@ -61,7 +70,6 @@
         .game-btn { background: #333; color: white; border: none; height: 60px; font-size: 24px; border-radius: 15px; touch-action: manipulation; }
         
         .hidden { display: none !important; }
-        #menu-hs-list { list-style: none; padding: 0; font-size: 0.8em; text-align: left; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;}
     </style>
 </head>
 <body>
@@ -76,7 +84,13 @@
                 <option value="450">Profi (Schnell)</option>
             </select>
             <button class="start-btn" onclick="startGame()">SPIEL STARTEN</button>
-            <ul id="menu-hs-list"></ul>
+            
+            <div id="highscore-container">
+                <h3>🏆 Bestenliste</h3>
+                <ul id="menu-hs-list">
+                    <li>Lädt Highscores...</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -130,11 +144,36 @@
     let dropInterval = 800;
     let dropCount = 0;
     let lastTime = 0;
-    
-    // NEU: Zähler für Beschleunigung
     let pieceCount = 0;
     const PIECES_PER_LEVEL = 20;
 
+    // Highscore Laden
+    let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
+
+    function updateHighscoreUI() {
+        const hsList = document.getElementById('menu-hs-list');
+        if (highscores.length === 0) {
+            hsList.innerHTML = "<li>Noch kein Record</li>";
+        } else {
+            hsList.innerHTML = highscores.map((e, i) => `
+                <li>
+                    <span>${i+1}. ${e.name}</span>
+                    <b>${e.score}</b>
+                </li>
+            `).join('');
+        }
+    }
+
+    function saveScore() {
+        if (score > 0) {
+            highscores.push({name: currentPlayerName, score: score});
+            highscores.sort((a,b) => b.score - a.score);
+            highscores = highscores.slice(0, 5); // Nur Top 5 behalten
+            localStorage.setItem('tetrisHS_v4', JSON.stringify(highscores));
+        }
+    }
+
+    // --- GAME ENGINE ---
     function createPiece(type) {
         if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if (type === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
@@ -179,14 +218,12 @@
                 if (val !== 0) arena[y + player.pos.y][x + player.pos.x] = val;
             });
         });
-
-        // Beschleunigungs-Logik
         pieceCount++;
         if (pieceCount >= PIECES_PER_LEVEL) {
             pieceCount = 0;
             if (dropInterval > 120) {
-                dropInterval *= 0.9; // 10% schneller
-                tg.HapticFeedback.notificationOccurred('success'); // Feedback bei Speed-Up
+                dropInterval *= 0.9;
+                tg.HapticFeedback.notificationOccurred('success');
             }
         }
         document.getElementById('p-count').innerText = pieceCount;
@@ -203,16 +240,11 @@
             ++y;
             rowCount++;
         }
-
         if (rowCount > 0) {
-            // NEU: Bonus-Punktesystem
-            const bonus = [0, 10, 30, 50, 200]; // 0, 1, 2, 3, 4 Reihen
+            const bonus = [0, 10, 30, 50, 200];
             score += bonus[rowCount];
             document.getElementById('s').innerText = score;
-            
-            // Haptisches Feedback je nach Stärke
-            if (rowCount === 4) tg.HapticFeedback.notificationOccurred('warning');
-            else tg.HapticFeedback.impactOccurred('medium');
+            tg.HapticFeedback.impactOccurred(rowCount === 4 ? 'heavy' : 'medium');
         }
     }
 
@@ -238,7 +270,6 @@
             player.pos.x += offset;
             offset = -(offset + (offset > 0 ? 1 : -1));
             if (offset > player.mat[0].length) {
-                // Rotation rückgängig machen wenn kein Platz
                 mat.forEach(row => row.reverse());
                 for (let y = 0; y < mat.length; ++y) {
                     for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
@@ -273,6 +304,7 @@
         
         if (collide(arena, player)) {
             paused = true;
+            saveScore();
             tg.HapticFeedback.notificationOccurred('error');
             alert("GAME OVER! Score: " + score);
             location.reload();
@@ -297,6 +329,9 @@
         pReset();
         update();
     }
+
+    // Initialisierung der Highscore-Anzeige
+    updateHighscoreUI();
 </script>
 </body>
 </html>
