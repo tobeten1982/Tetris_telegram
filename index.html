@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Global Edition</title>
+    <title>Vision Tetris Pro - Global</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -23,10 +23,16 @@
         }
 
         /* --- OVERLAYS --- */
-        #menu-overlay, #rules-overlay, #shop-overlay {
+        #menu-overlay, #shop-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             z-index: 100; display: flex; justify-content: center; align-items: center;
             backdrop-filter: blur(5px);
+        }
+
+        #rules-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 999; display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
         }
 
         #shop-overlay { background: rgba(0,0,0,0.9); z-index: 150; display: none; }
@@ -42,7 +48,7 @@
             border-radius: 12px; font-weight: 700; margin-bottom: 10px;
         }
 
-        .rules-content { text-align: left; font-size: 0.85em; background: #f8f9fa; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin: 10px 0; }
+        .rules-content { text-align: left; font-size: 0.9em; background: #f8f9fa; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin-bottom: 20px; }
 
         /* --- GAME UI --- */
         .header-box { margin-top: 15px; display: flex; gap: 15px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; font-size: 0.9em; }
@@ -58,20 +64,20 @@
         .hidden { display: none !important; }
         #menu-hs-list { list-style: none; padding: 0; margin-top: 10px; text-align: left; }
         #menu-hs-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        .secondary-btn { background: #6c757d; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        .secondary-btn { background: #6c757d; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="rules-overlay" class="hidden">
+    <div id="rules-overlay">
         <div class="menu-card">
-            <h2 style="margin: 0;">📜 Spielregeln</h2>
+            <h2 style="margin: 0 0 15px 0;">📜 Spielregeln</h2>
             <div class="rules-content">
-                <ul style="list-style: none; padding: 0;">
-                    <li style="margin-bottom: 8px;">🙈 <b>Blind:</b> Vorschau (?) ist anfangs aus.</li>
-                    <li style="margin-bottom: 8px;">👁️ <b>Vision:</b> Level-Up gibt 10 Visionen frei.</li>
-                    <li style="margin-bottom: 8px;">🛒 <b>Shop:</b> Wunschstein für 4 💰 kaufen.</li>
-                    <li>🏆 <b>Global:</b> Miss dich mit allen Spielern!</li>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 10px;">🙈 <b>Blind:</b> Die Vorschau ist anfangs deaktiviert.</li>
+                    <li style="margin-bottom: 10px;">👁️ <b>Vision:</b> Level-Up gibt 10 Visionen frei.</li>
+                    <li style="margin-bottom: 10px;">🛒 <b>Shop:</b> Steine für 4 💰 kaufen.</li>
+                    <li>🏆 <b>Global:</b> Bestenliste für alle Spieler!</li>
                 </ul>
             </div>
             <button class="secondary-btn" style="background: var(--tg-btn);" onclick="toggleRules(false)">VERSTANDEN</button>
@@ -101,18 +107,18 @@
             <div id="player-name-display" class="name-badge">Spieler</div>
             <div style="margin-bottom: 10px;">💰 Münzen: <span id="menu-coins">0</span></div>
             
-            <select id="speed-select" style="width: 100%; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #ddd;">
+            <select id="speed-select" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 2px solid #ddd; font-weight: bold;">
                 <option value="900">Easy</option>
                 <option value="650" selected>Normal</option>
                 <option value="400">Hard</option>
                 <option value="200">Extreme</option>
             </select>
             
-            <button style="width:100%; padding:15px; border-radius:12px; border:none; background:var(--tg-btn); color:white; font-weight:bold;" onclick="startGame()">JETZT STARTEN</button>
+            <button style="width:100%; padding:18px; border-radius:14px; border:none; background:var(--tg-btn); color:white; font-weight:bold; font-size: 1.1em;" onclick="startGame()">JETZT STARTEN</button>
             <button class="secondary-btn" onclick="toggleRules(true)">📜 REGELN LESEN</button>
             
-            <div style="margin-top: 15px; font-weight: bold; font-size: 0.8em; color: #888;">🌎 GLOBALE TOP 5:</div>
-            <ul id="menu-hs-list"><li>Bestenliste lädt...</li></ul>
+            <div style="margin-top: 15px; font-weight: bold; font-size: 0.85em; color: #888;">🌎 GLOBALE TOP 5:</div>
+            <ul id="menu-hs-list"><li>Lade Bestenliste...</li></ul>
         </div>
     </div>
 
@@ -145,7 +151,6 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Globale Datenbank-ID
     const DB_URL = "https://kvdb.io/VisionTetrisPro_v1_9922/scores";
 
     const canvas = document.getElementById('t');
@@ -160,16 +165,10 @@
     let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
     let customQueue = [];
 
-    // --- FIX: REGELN TOGGLE ---
+    // --- REGELN FIX ---
     function toggleRules(show) {
         const rules = document.getElementById('rules-overlay');
-        if (show) {
-            rules.classList.remove('hidden');
-            rules.style.display = 'flex';
-        } else {
-            rules.classList.add('hidden');
-            rules.style.display = 'none';
-        }
+        rules.style.display = show ? 'flex' : 'none';
     }
 
     function createMat(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
@@ -203,7 +202,7 @@
                 const hs = await res.json();
                 document.getElementById('menu-hs-list').innerHTML = hs.map(e => `<li>${e.name} <span>${e.score}</span></li>`).join('');
             }
-        } catch (e) { document.getElementById('menu-hs-list').innerHTML = "Fehler beim Laden."; }
+        } catch (e) { document.getElementById('menu-hs-list').innerHTML = "Noch keine Einträge."; }
     }
 
     function openShop() { paused = true; document.getElementById('shop-overlay').style.display = 'flex'; updateShopStatus(); }
@@ -219,12 +218,10 @@
     }
     function closeShop() { document.getElementById('shop-overlay').style.display = 'none'; paused = false; requestAnimationFrame(update); }
 
-    // --- FIX: START GAME ---
     function startGame() {
         dropInterval = parseInt(document.getElementById('speed-select').value);
         document.getElementById('menu-overlay').classList.add('hidden');
-        document.getElementById('rules-overlay').classList.add('hidden');
-        document.getElementById('rules-overlay').style.display = 'none';
+        toggleRules(false); // Regeln sicher schließen
         paused = false; pReset(); update();
     }
 
@@ -314,7 +311,7 @@
     (function init() {
         document.getElementById('menu-coins').innerText = coins;
         document.getElementById('coin-count').innerText = coins;
-        document.getElementById('player-name-display').innerText = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast";
+        document.getElementById('player-name-display').innerText = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Spieler";
         loadGlobalScores();
     })();
 </script>
