@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tetris Telegram - Highscore Edition</title>
+    <title>Tetris Telegram - Vision Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -33,74 +33,54 @@
             width: 80%; max-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        .name-badge {
-            background: #f0f0f0; border: 2px solid #ddd; padding: 12px;
-            border-radius: 10px; font-weight: bold; color: #555;
-            margin-bottom: 10px; display: block;
-        }
-
+        .name-badge { background: #f0f0f0; border: 2px solid #ddd; padding: 12px; border-radius: 10px; font-weight: bold; color: #555; margin-bottom: 10px; display: block; }
         select { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; font-size: 16px; }
-
-        .start-btn {
-            background: var(--tg-btn); color: var(--tg-btn-text);
-            border: none; padding: 18px; width: 100%; border-radius: 12px;
-            font-weight: bold; font-size: 1.1em; cursor: pointer;
-        }
-
-        /* Highscore Liste im Menü */
-        #highscore-container {
-            margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 10px;
-        }
-        #highscore-container h3 { margin: 0 0 10px 0; font-size: 0.9em; color: #888; text-transform: uppercase; }
-        #menu-hs-list { list-style: none; padding: 0; margin: 0; font-size: 0.85em; }
-        #menu-hs-list li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f5f5f5; }
-        #menu-hs-list li:last-child { border: none; }
+        .start-btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; font-size: 1.1em; cursor: pointer; }
 
         .header-box { margin-top: 10px; font-weight: bold; font-size: 0.9em; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 15px; border: 1px solid #555; }
         .canvas-container { position: relative; margin-top: 10px; }
         canvas#t { border: 4px solid #444; background: #000; border-radius: 10px; max-height: 45vh; }
         
         #next-container {
-            position: absolute; top: 5px; right: -60px;
-            background: rgba(0,0,0,0.8); border: 1px solid #fff;
-            padding: 5px; border-radius: 8px;
+            position: absolute; top: 5px; right: -65px;
+            background: rgba(0,0,0,0.8); border: 2px solid #555;
+            padding: 5px; border-radius: 8px; width: 50px;
         }
+
+        .vision-text { font-size: 9px; color: #ffeb3b; font-weight: bold; margin-bottom: 2px; }
 
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; width: 100%; max-width: 400px; box-sizing: border-box; }
         .game-btn { background: #333; color: white; border: none; height: 60px; font-size: 24px; border-radius: 15px; touch-action: manipulation; }
         
         .hidden { display: none !important; }
+        #menu-hs-list { list-style: none; padding: 0; margin: 10px 0 0 0; font-size: 0.85em; text-align: left; border-top: 1px solid #eee; padding-top: 10px; }
+        #menu-hs-list li { display: flex; justify-content: space-between; padding: 3px 0; }
     </style>
 </head>
 <body>
 
     <div id="menu-overlay">
         <div class="menu-card">
-            <h2 style="margin-top:0;">TG Tetris</h2>
+            <h2 style="margin-top:0;">Vision Tetris</h2>
             <div id="player-name-display" class="name-badge">Lädt...</div>
             <select id="speed-select">
-                <option value="1000">Lauch (Langsam)</option>
+                <option value="1000">Lauch</option>
                 <option value="750" selected>Normal</option>
-                <option value="450">Profi (Schnell)</option>
+                <option value="450">Profi</option>
             </select>
-            <button class="start-btn" onclick="startGame()">SPIEL STARTEN</button>
-            
-            <div id="highscore-container">
-                <h3>🏆 Bestenliste</h3>
-                <ul id="menu-hs-list">
-                    <li>Lädt Highscores...</li>
-                </ul>
-            </div>
+            <button class="start-btn" onclick="startGame()">JETZT SPIELEN</button>
+            <ul id="menu-hs-list"></ul>
         </div>
     </div>
 
     <div class="header-box">
-        Score: <span id="s">0</span> | Steine: <span id="p-count">0</span>/20
+        Score: <span id="s">0</span> | Vision: <span id="v-count">0</span>
     </div>
 
     <div class="canvas-container">
         <canvas id="t" width="240" height="400"></canvas>
         <div id="next-container">
+            <div id="vision-label" class="vision-text">? ? ?</div>
             <canvas id="nextCanvas" width="40" height="40"></canvas>
         </div>
     </div>
@@ -137,43 +117,18 @@
     const PIECES = 'ILJOTSZ';
 
     let arena = createMat(12, 20);
-    let player = { pos: {x: 0, y: 0}, mat: null, name: "" };
+    let player = { pos: {x: 0, y: 0}, mat: null };
     let nextPieceMat = null;
     let score = 0;
     let paused = true;
     let dropInterval = 800;
     let dropCount = 0;
     let lastTime = 0;
-    let pieceCount = 0;
-    const PIECES_PER_LEVEL = 20;
 
-    // Highscore Laden
-    let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
+    // VISION LOGIK
+    let visionPieces = 0; // Wie viele Steine man noch sehen darf
+    let lastMilestone = 0; // Um zu tracken, wann die nächsten 20 Punkte erreicht wurden
 
-    function updateHighscoreUI() {
-        const hsList = document.getElementById('menu-hs-list');
-        if (highscores.length === 0) {
-            hsList.innerHTML = "<li>Noch kein Record</li>";
-        } else {
-            hsList.innerHTML = highscores.map((e, i) => `
-                <li>
-                    <span>${i+1}. ${e.name}</span>
-                    <b>${e.score}</b>
-                </li>
-            `).join('');
-        }
-    }
-
-    function saveScore() {
-        if (score > 0) {
-            highscores.push({name: currentPlayerName, score: score});
-            highscores.sort((a,b) => b.score - a.score);
-            highscores = highscores.slice(0, 5); // Nur Top 5 behalten
-            localStorage.setItem('tetrisHS_v4', JSON.stringify(highscores));
-        }
-    }
-
-    // --- GAME ENGINE ---
     function createPiece(type) {
         if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if (type === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
@@ -198,7 +153,20 @@
         
         nctx.fillStyle = '#000';
         nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-        drawMat(nctx, nextPieceMat, {x: 0.5, y: 0.5});
+        
+        // Nur zeichnen, wenn Vision aktiv ist
+        if (visionPieces > 0) {
+            drawMat(nctx, nextPieceMat, {x: 0.5, y: 0.5});
+            document.getElementById('vision-label').innerText = "NEXT: " + visionPieces;
+            document.getElementById('vision-label').style.color = "#4caf50";
+        } else {
+            // Unbekannter Stein
+            nctx.fillStyle = "#333";
+            nctx.font = "2px Arial";
+            nctx.fillText("?", 1.5, 3);
+            document.getElementById('vision-label').innerText = "BLIND";
+            document.getElementById('vision-label').style.color = "#f44336";
+        }
     }
 
     function drawMat(context, mat, pos) {
@@ -210,23 +178,6 @@
                 }
             });
         });
-    }
-
-    function merge(arena, player) {
-        player.mat.forEach((row, y) => {
-            row.forEach((val, x) => {
-                if (val !== 0) arena[y + player.pos.y][x + player.pos.x] = val;
-            });
-        });
-        pieceCount++;
-        if (pieceCount >= PIECES_PER_LEVEL) {
-            pieceCount = 0;
-            if (dropInterval > 120) {
-                dropInterval *= 0.9;
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-        }
-        document.getElementById('p-count').innerText = pieceCount;
     }
 
     function arenaSweep() {
@@ -244,8 +195,47 @@
             const bonus = [0, 10, 30, 50, 200];
             score += bonus[rowCount];
             document.getElementById('s').innerText = score;
-            tg.HapticFeedback.impactOccurred(rowCount === 4 ? 'heavy' : 'medium');
+            
+            // VISION CHECK: Bei jedem 20er Sprung 10 Vision-Steine dazu
+            let currentMilestone = Math.floor(score / 20);
+            if (currentMilestone > lastMilestone) {
+                visionPieces += 10;
+                lastMilestone = currentMilestone;
+                tg.HapticFeedback.notificationOccurred('success'); // Erfolgsvibration
+            }
+            document.getElementById('v-count').innerText = visionPieces;
+            tg.HapticFeedback.impactOccurred('medium');
         }
+    }
+
+    function pReset() {
+        player.mat = nextPieceMat || createPiece(PIECES[Math.random() * PIECES.length | 0]);
+        nextPieceMat = createPiece(PIECES[Math.random() * PIECES.length | 0]);
+        player.pos.y = 0;
+        player.pos.x = (arena[0].length / 2 | 0) - (player.mat[0].length / 2 | 0);
+        
+        // Vision Stein verbrauchen
+        if (visionPieces > 0) {
+            visionPieces--;
+            document.getElementById('v-count').innerText = visionPieces;
+        }
+
+        if (collide(arena, player)) {
+            paused = true;
+            saveScore();
+            tg.HapticFeedback.notificationOccurred('error');
+            alert("GAME OVER! Score: " + score);
+            location.reload();
+        }
+    }
+
+    // --- RESTLICHE STANDARDFUNKTIONEN ---
+    function merge(arena, player) {
+        player.mat.forEach((row, y) => {
+            row.forEach((val, x) => {
+                if (val !== 0) arena[y + player.pos.y][x + player.pos.x] = val;
+            });
+        });
     }
 
     function collide(arena, player) {
@@ -259,23 +249,15 @@
     }
 
     function pRotate() {
-        const pos = player.pos.x;
-        let offset = 1;
         const mat = player.mat;
         for (let y = 0; y < mat.length; ++y) {
             for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
         }
         mat.forEach(row => row.reverse());
-        while (collide(arena, player)) {
-            player.pos.x += offset;
-            offset = -(offset + (offset > 0 ? 1 : -1));
-            if (offset > player.mat[0].length) {
-                mat.forEach(row => row.reverse());
-                for (let y = 0; y < mat.length; ++y) {
-                    for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
-                }
-                player.pos.x = pos;
-                return;
+        if (collide(arena, player)) {
+            mat.forEach(row => row.reverse());
+            for (let y = 0; y < mat.length; ++y) {
+                for (let x = 0; x < y; ++x) [mat[x][y], mat[y][x]] = [mat[y][x], mat[x][y]];
             }
         }
     }
@@ -296,21 +278,6 @@
         if (collide(arena, player)) player.pos.x -= dir;
     }
 
-    function pReset() {
-        player.mat = nextPieceMat || createPiece(PIECES[Math.random() * PIECES.length | 0]);
-        nextPieceMat = createPiece(PIECES[Math.random() * PIECES.length | 0]);
-        player.pos.y = 0;
-        player.pos.x = (arena[0].length / 2 | 0) - (player.mat[0].length / 2 | 0);
-        
-        if (collide(arena, player)) {
-            paused = true;
-            saveScore();
-            tg.HapticFeedback.notificationOccurred('error');
-            alert("GAME OVER! Score: " + score);
-            location.reload();
-        }
-    }
-
     function update(time = 0) {
         if (paused) return;
         const dt = time - lastTime;
@@ -321,8 +288,16 @@
         requestAnimationFrame(update);
     }
 
+    function saveScore() {
+        let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
+        if (score > 0) {
+            highscores.push({name: currentPlayerName, score: score});
+            highscores.sort((a,b) => b.score - a.score);
+            localStorage.setItem('tetrisHS_v4', JSON.stringify(highscores.slice(0, 5)));
+        }
+    }
+
     function startGame() {
-        player.name = currentPlayerName;
         dropInterval = parseInt(document.getElementById('speed-select').value);
         document.getElementById('menu-overlay').classList.add('hidden');
         paused = false;
@@ -330,8 +305,11 @@
         update();
     }
 
-    // Initialisierung der Highscore-Anzeige
-    updateHighscoreUI();
+    // Highscore Anzeige beim Start
+    (function init() {
+        let highscores = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
+        document.getElementById('menu-hs-list').innerHTML = highscores.map(e => `<li><span>${e.name}</span><b>${e.score}</b></li>`).join('') || "Keine Records";
+    })();
 </script>
 </body>
 </html>
