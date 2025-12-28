@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Final Stable</title>
+    <title>Vision Tetris Pro - Highscore Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -22,28 +22,45 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* --- ANIMATIONEN --- */
+        #level-up-toast, #highscore-toast {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            font-weight: 900; font-size: 2.2em; pointer-events: none;
+            z-index: 60; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; white-space: nowrap; text-align: center;
+        }
+        #level-up-toast { color: #4caf50; text-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
+        #highscore-toast { color: var(--coin-gold); text-shadow: 0 0 20px rgba(255, 215, 0, 0.9); }
+        .show-anim { transform: translate(-50%, -50%) scale(1.1) !important; opacity: 1 !important; }
+
+        .score-pulse { animation: pulse-gold 1s infinite; }
+        @keyframes pulse-gold {
+            0% { color: var(--accent); transform: scale(1); }
+            50% { color: var(--coin-gold); transform: scale(1.2); text-shadow: 0 0 10px gold; }
+            100% { color: var(--accent); transform: scale(1); }
+        }
+
+        /* --- UI STYLES --- */
         #menu-overlay, #shop-overlay, #rules-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             z-index: 100; display: flex; justify-content: center; align-items: center;
             backdrop-filter: blur(5px);
         }
-
-        #rules-overlay { display: none; z-index: 200; }
-        #shop-overlay { display: none; z-index: 150; }
+        #rules-overlay, #shop-overlay { display: none; }
 
         .menu-card {
-            background: #ffffff; color: #222; padding: 25px; border-radius: 24px;
-            width: 85%; max-width: 320px; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #ffffff; color: #222; padding: 20px; border-radius: 24px;
+            width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .name-badge { 
-            background: #f8f9fa; border: 1px solid #e0e0e0; padding: 12px; 
-            border-radius: 12px; font-weight: 700; margin-bottom: 10px;
-            cursor: pointer; user-select: none;
-        }
+        .piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
+        .piece-btn { background: #222; border: 2px solid #444; border-radius: 10px; padding: 5px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .piece-btn:active { transform: scale(0.9); border-color: var(--tg-btn); }
+        .piece-svg { width: 35px; height: 35px; }
+        .inventory-bar { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px; margin: 10px 0; min-height: 25px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+        .inv-dot { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); }
 
-        .header-box { margin-top: 15px; display: flex; gap: 15px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; font-size: 0.9em; }
+        .header-box { margin-top: 15px; display: flex; gap: 15px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; font-size: 0.9em; z-index: 10; }
         #next-container { position: absolute; top: 0; right: -75px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; border: 2px solid #444; width: 55px; text-align: center; }
         canvas#t { border: 4px solid #333; border-radius: 15px; background: #000; }
         
@@ -51,72 +68,69 @@
         .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
         .coin-btn { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; margin-top: 8px; cursor: pointer; }
         
-        .piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
-        .piece-opt { background: #333; border: 1px solid #555; border-radius: 8px; padding: 10px; font-weight: bold; color: white; cursor: pointer; }
-
         #menu-hs-list { list-style: none; padding: 0; margin-top: 10px; text-align: left; }
-        #menu-hs-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .secondary-btn { background: #6c757d; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        #menu-hs-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.85em; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <div id="level-up-toast">LEVEL UP! 👁️</div>
+    <div id="highscore-toast">NEW RECORD! 🔥</div>
+
     <div id="rules-overlay">
         <div class="menu-card">
             <h2>📜 Regeln</h2>
-            <div style="text-align: left; font-size: 0.9em; background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                • 🙈 <b>Blind:</b> Keine Vorschau anfangs.<br>
-                • 👁️ <b>Vision:</b> +20 Pkt = 10 Visionen.<br>
-                • 🛒 <b>Shop:</b> Wunschstein kaufen (4 💰).<br>
-                • ✨ <b>Gold:</b> Gekaufte Steine leuchten!
+            <div style="text-align: left; font-size: 0.85em; background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                • Alle 20 Pkt: <b>10 Visionen</b>.<br>
+                • Shop: Wunschsteine (4 💰).<br>
+                • Werde zur Legende und knacke den Rekord!
             </div>
-            <button class="secondary-btn" style="background: var(--tg-btn);" onclick="toggleRules(false)">OK</button>
+            <button onclick="toggleRules(false)" style="width:100%; padding:15px; border-radius:12px; background:var(--tg-btn); color:white; border:none; font-weight:bold;">OK</button>
         </div>
     </div>
 
     <div id="shop-overlay">
         <div class="menu-card" style="background: #1a1a1a; color: white; border: 2px solid var(--coin-gold);">
-            <div style="font-weight: bold; color: var(--coin-gold);">Stein-Markt (4 💰)</div>
-            <div id="shop-status" style="font-size: 0.8em; margin: 5px; color: #bbb;">Wähle deine Steine</div>
+            <div style="font-weight:bold; color:var(--coin-gold);">Stein-Markt (4 💰)</div>
             <div class="piece-grid">
-                <button class="piece-opt" onclick="selectPiece('I')">I</button>
-                <button class="piece-opt" onclick="selectPiece('O')">O</button>
-                <button class="piece-opt" onclick="selectPiece('T')">T</button>
-                <button class="piece-opt" onclick="selectPiece('S')">S</button>
-                <button class="piece-opt" onclick="selectPiece('Z')">Z</button>
-                <button class="piece-opt" onclick="selectPiece('J')">J</button>
-                <button class="piece-opt" onclick="selectPiece('L')">L</button>
+                <button class="piece-btn" onclick="selectPiece('I')"><svg class="piece-svg" viewBox="0 0 40 40"><rect x="0" y="15" width="40" height="10" fill="#0DC2FF" rx="2"/></svg></button>
+                <button class="piece-btn" onclick="selectPiece('O')"><svg class="piece-svg" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" fill="#FFE138" rx="2"/></svg></button>
+                <button class="piece-btn" onclick="selectPiece('T')"><svg class="piece-svg" viewBox="0 0 40 40"><path d="M10 25h20v-10h-10v-10h-10z" fill="#F538FF"/></svg></button>
+                <button class="piece-btn" onclick="selectPiece('L')"><svg class="piece-svg" viewBox="0 0 40 40"><path d="M10 10v20h20v-10h-10v-10z" fill="#FF8E0D"/></svg></button>
+                <button class="piece-btn" onclick="selectPiece('J')"><svg class="piece-svg" viewBox="0 0 40 40"><path d="M30 10v20h-20v-10h10v-10z" fill="#3877FF"/></svg></button>
+                <button class="piece-btn" onclick="selectPiece('S')"><svg class="piece-svg" viewBox="0 0 40 40"><path d="M10 25h10v-10h10v-10h-20z" fill="#0DFF72"/></svg></button>
+                <button class="piece-btn" onclick="selectPiece('Z')"><svg class="piece-svg" viewBox="0 0 40 40"><path d="M10 15h10v10h10v-10h-20z" fill="#FF0D72"/></svg></button>
             </div>
-            <button onclick="closeShop()" style="width: 100%; padding: 15px; background: var(--tg-btn); color: white; border: none; border-radius: 12px; font-weight: bold;">FERTIG</button>
+            <div id="shop-inventory" class="inventory-bar"></div>
+            <button onclick="closeShop()" style="width:100%; padding:15px; border-radius:12px; background:var(--tg-btn); color:white; border:none; font-weight:bold;">ZURÜCK</button>
         </div>
     </div>
 
     <div id="menu-overlay">
         <div class="menu-card">
-            <h2 style="margin: 0;">Vision Tetris</h2>
-            <div id="player-name-display" class="name-badge">Spieler</div>
-            <div style="margin-bottom: 10px;">💰 Münzen: <span id="menu-coins">0</span></div>
-            <select id="speed-select" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 2px solid #ddd; font-weight: bold;">
-                <option value="900">Easy</option>
-                <option value="650" selected>Normal</option>
+            <h2 style="margin:0;">Vision Tetris</h2>
+            <div id="player-name-display" style="font-weight:bold; margin:10px 0; color:#555;">Spieler</div>
+            <div style="margin-bottom:10px;">💰 Münzen: <span id="menu-coins">0</span></div>
+            <select id="speed-select" style="width:100%; padding:12px; border-radius:12px; margin-bottom:10px; border:2px solid #ddd; font-weight:bold;">
+                <option value="650">Normal</option>
                 <option value="400">Hard</option>
                 <option value="200">Extreme</option>
             </select>
-            <button style="width:100%; padding:18px; border-radius:14px; background:var(--tg-btn); color:white; font-weight:bold;" onclick="startGame()">START</button>
-            <button class="secondary-btn" onclick="toggleRules(true)">📜 REGELN</button>
-            <div style="margin-top: 15px; font-weight: bold; font-size: 0.85em; color: #888;">🏆 DEINE TOP 5:</div>
+            <button onclick="startGame()" style="width:100%; padding:18px; border-radius:14px; background:var(--tg-btn); color:white; font-weight:bold; border:none;">SPIEL STARTEN</button>
+            <button onclick="toggleRules(true)" style="width:100%; padding:10px; margin-top:8px; border:none; background:none; color:#888; font-weight:bold;">REGELN</button>
+            <div style="margin-top:15px; font-weight:bold; font-size:0.8em; color:#999; border-top:1px solid #eee; padding-top:10px;">DEINE BESTENLISTE</div>
             <ul id="menu-hs-list"></ul>
         </div>
     </div>
 
     <div class="header-box">
-        <div>Score: <span id="s" style="color:var(--accent);">0</span></div>
+        <div id="score-container">Score: <span id="s" style="color:var(--accent); font-weight:bold;">0</span></div>
         <div>Vision: <span id="v-count" style="color:#4caf50;">0</span></div>
         <div>💰: <span id="coin-count">0</span></div>
     </div>
     
-    <button class="coin-btn" onclick="openShop()">✨ Shop öffnen</button>
+    <button class="coin-btn" onclick="openShop()">✨ Shop</button>
 
     <div style="position:relative; margin-top:15px;">
         <canvas id="t" width="240" height="400"></canvas>
@@ -139,51 +153,54 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const canvas = document.getElementById('t');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('t'), ctx = canvas.getContext('2d');
     const nctx = document.getElementById('nextCanvas').getContext('2d');
     ctx.scale(20, 20); nctx.scale(10, 10);
 
     const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+    const PIECE_COLORS = {I:'#0DC2FF', O:'#FFE138', T:'#F538FF', L:'#FF8E0D', J:'#3877FF', S:'#0DFF72', Z:'#FF0D72'};
+    
     let arena = createMat(12, 20), player = { pos: {x: 0, y: 0}, mat: null };
     let nextPieceMat = null, score = 0, visionPieces = 0, lastMilestone = 0, paused = true, dropInterval = 650, dropCount = 0, lastTime = 0;
     let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
     let customQueue = [];
+    let personalBest = 0, hsNotified = false;
 
-    // --- ADMIN ---
-    let adminClicks = 0;
-    document.getElementById('player-name-display').onclick = function() {
-        if(++adminClicks === 3) {
-            const pw = prompt("Passwort:");
-            if(pw === "admin123") {
-                const action = prompt("1: Reset, 2: +999 💰");
-                if(action === "1") { localStorage.clear(); location.reload(); }
-                else if(action === "2") { coins += 999; saveCoins(); location.reload(); }
-            }
-            adminClicks = 0;
+    // --- ANIMATIONEN ---
+    function showToast(id) {
+        const t = document.getElementById(id);
+        t.classList.add('show-anim');
+        setTimeout(() => t.classList.remove('show-anim'), 2500);
+    }
+
+    // --- BESTENLISTE & REKORD ---
+    function checkHighscore() {
+        if (score > personalBest && personalBest > 0 && !hsNotified) {
+            hsNotified = true;
+            showToast('highscore-toast');
+            document.getElementById('score-container').classList.add('score-pulse');
+            tg.HapticFeedback.notificationOccurred('warning');
         }
-    };
+    }
 
-    // --- BESTENLISTE ---
     function saveLocalScore() {
         let scores = JSON.parse(localStorage.getItem('tetrisScores')) || [];
         const jetzt = new Date();
-        const datum = jetzt.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'}) + ", " + 
-                     jetzt.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+        const datum = jetzt.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'}) + ", " + jetzt.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
         scores.push({ score, date: datum });
         scores.sort((a, b) => b.score - a.score);
-        scores = scores.slice(0, 5);
-        localStorage.setItem('tetrisScores', JSON.stringify(scores));
+        localStorage.setItem('tetrisScores', JSON.stringify(scores.slice(0, 5)));
     }
 
     function loadLocalScores() {
         const list = document.getElementById('menu-hs-list');
         const scores = JSON.parse(localStorage.getItem('tetrisScores')) || [];
-        if (scores.length === 0) { list.innerHTML = "<li>Kein Rekord</li>"; return; }
-        list.innerHTML = scores.map((s, i) => `<li><div><b>${i+1}. ${s.score}</b><br><small>${s.date}</small></div><span>🏆</span></li>`).join('');
+        personalBest = scores.length > 0 ? scores[0].score : 0;
+        if (scores.length === 0) { list.innerHTML = "<li>Keine Einträge</li>"; return; }
+        list.innerHTML = scores.map((s, i) => `<li><div><b>${i+1}. ${s.score}</b> <small>${s.date}</small></div><span>🏆</span></li>`).join('');
     }
 
-    // --- CORE GAME ---
+    // --- GAME ENGINE ---
     function createMat(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
     function createPiece(t) {
         if (t === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
@@ -196,7 +213,6 @@
     }
 
     function pReset() {
-        // Logik: Erst Einkäufe, dann Zufall
         if (customQueue.length > 0) {
             player.mat = createPiece(customQueue.shift());
         } else {
@@ -221,24 +237,23 @@
         nctx.fillStyle = '#000'; nctx.fillRect(0, 0, 40, 40);
         const isCustom = (customQueue.length > 0);
         if (visionPieces > 0 || isCustom) {
-            // Vorschau zeigt gekauften Stein oder nächsten Zufallsstein
             const previewMat = isCustom ? createPiece(customQueue[0]) : nextPieceMat;
             drawMat(nctx, previewMat, {x:0.5, y:0.5}, isCustom);
             document.getElementById('vision-label').innerText = "VISION";
-            document.getElementById('vision-label').style.color = isCustom ? "var(--coin-gold)" : "#4caf50";
+            document.getElementById('vision-label').style.color = isCustom ? "gold" : "#4caf50";
         } else {
             nctx.fillStyle = "#333"; nctx.font = "bold 3px Arial"; nctx.fillText("?", 1.5, 3.5);
             document.getElementById('vision-label').innerText = "BLIND";
             document.getElementById('vision-label').style.color = "white";
         }
-        document.getElementById('v-count').innerText = visionPieces;
         document.getElementById('s').innerText = score;
         document.getElementById('coin-count').innerText = coins;
+        document.getElementById('v-count').innerText = visionPieces;
     }
 
     function drawMat(c, m, o, gold = false) {
         m.forEach((r, y) => r.forEach((v, x) => {
-            if (v !== 0) { c.fillStyle = gold ? "#ffd700" : COLORS[v]; c.fillRect(x + o.x, y + o.y, 1, 1); }
+            if (v !== 0) { c.fillStyle = gold ? "gold" : COLORS[v]; c.fillRect(x + o.x, y + o.y, 1, 1); }
         }));
     }
 
@@ -275,7 +290,13 @@
         }
         if (rows > 0) {
             score += [0, 10, 30, 50, 200][rows];
-            if (Math.floor(score / 20) > lastMilestone) { visionPieces += 10; lastMilestone = Math.floor(score/20); }
+            checkHighscore();
+            if (Math.floor(score / 20) > lastMilestone) { 
+                lastMilestone = Math.floor(score/20); 
+                visionPieces += 10;
+                showToast('level-up-toast');
+                tg.HapticFeedback.notificationOccurred('success');
+            }
         }
     }
 
@@ -287,25 +308,28 @@
     }
 
     // --- UI ACTIONS ---
-    function startGame() {
-        dropInterval = parseInt(document.getElementById('speed-select').value);
-        document.getElementById('menu-overlay').classList.add('hidden');
-        paused = false; pReset(); update();
-    }
-    function openShop() { paused = true; document.getElementById('shop-overlay').style.display = 'flex'; }
     function selectPiece(t) {
-        if (coins >= 4) { coins -= 4; customQueue.push(t); saveCoins(); tg.HapticFeedback.impactOccurred('medium'); document.getElementById('coin-count').innerText = coins; }
-        else { tg.showAlert("Zu wenig Münzen!"); }
+        if (coins >= 4) {
+            coins -= 4; customQueue.push(t); saveCoins();
+            tg.HapticFeedback.impactOccurred('medium');
+            updateShopInventory();
+            document.getElementById('coin-count').innerText = coins;
+        } else { tg.showAlert("Nicht genug Münzen!"); }
     }
+    function updateShopInventory() {
+        const inv = document.getElementById('shop-inventory');
+        inv.innerHTML = customQueue.length === 0 ? "<small style='color:#555'>Leer</small>" : customQueue.map(t => `<div class="inv-dot" style="background:${PIECE_COLORS[t]}"></div>`).join('');
+    }
+    function openShop() { paused = true; document.getElementById('shop-overlay').style.display = 'flex'; updateShopInventory(); }
     function closeShop() { document.getElementById('shop-overlay').style.display = 'none'; paused = false; lastTime = performance.now(); requestAnimationFrame(update); }
+    function startGame() { dropInterval = parseInt(document.getElementById('speed-select').value); document.getElementById('menu-overlay').classList.add('hidden'); paused = false; pReset(); update(); }
     function toggleRules(s) { document.getElementById('rules-overlay').style.display = s?'flex':'none'; }
     function saveCoins() { localStorage.setItem('tetrisCoins', coins); }
 
     (function init() {
         document.getElementById('menu-coins').innerText = coins;
         document.getElementById('coin-count').innerText = coins;
-        const u = tg.initDataUnsafe.user;
-        document.getElementById('player-name-display').innerText = u ? u.first_name : "Gast";
+        document.getElementById('player-name-display').innerText = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast";
         loadLocalScores();
     })();
 </script>
