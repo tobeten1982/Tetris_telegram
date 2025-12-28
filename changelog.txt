@@ -1,0 +1,80 @@
+==================================================
+PROJECT: TETRIS Extreme - TELEGRAM STAR EDITION
+==================================================
+
+--------------------------------------------------
+TEIL 1: DAS FRONTEND (index.html)
+--------------------------------------------------
+Kopiere diesen Code in deine HTML-Datei. Er enthält:
+- Level-Up: 50 Pkt (+8 Münzen)
+- Tetris-Bonus: 4 Reihen (+4 Münzen)
+- Vision-System & Shop
+- Signal-Übertragung für das Freispiel (Score >= 100)
+
+[Hier den HTML-Code von oben einfügen - gekürzt für die Übersicht]
+... (Der HTML-Code enthält die Funktion finalizeGame(score) am Ende) ...
+
+--------------------------------------------------
+TEIL 2: DAS BACKEND (bot.py)
+--------------------------------------------------
+Dieses Skript steuert die Telegram Stars und das Freispiel-System.
+Benötigt: pip install python-telegram-bot
+
+import json
+from telegram import LabeledPrice, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, PreCheckoutQueryHandler, MessageHandler, filters, ContextTypes
+
+TOKEN = "DEIN_BOT_TOKEN_HIER"
+user_credits = {}
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    if uid not in user_credits: user_credits[uid] = 0
+    
+    text = f"Willkommen! Guthaben: {user_credits[uid]} Freispiele."
+    kb = [[InlineKeyboardButton("Spielen (10 Sterne)", callback_data="buy")]] if user_credits[uid] <= 0 else [[InlineKeyboardButton("Freispiel nutzen", callback_data="play")]]
+    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
+
+async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.pre_checkout_query.answer(ok=True)
+
+async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    user_credits[uid] += 1
+    await update.message.reply_text("Zahlung erhalten! 1 Runde gutgeschrieben.")
+
+async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Empfängt Daten vom Spiel (Score >= 100)
+    data = json.loads(update.effective_message.web_app_data.data)
+    uid = update.effective_user.id
+    if data.get("status") == "winner":
+        user_credits[uid] += 1
+        await update.message.reply_text("🏆 Über 100 Punkte! Du hast ein Freispiel erhalten!")
+
+def main():
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(PreCheckoutQueryHandler(precheckout))
+    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, success_payment))
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
+    app.run_polling()
+
+if __name__ == "__main__": main()
+
+--------------------------------------------------
+TEIL 3: ANLEITUNG & SETUP
+--------------------------------------------------
+1. Bot-Setup:
+   - @BotFather -> /mybots -> Payments -> Telegram Stars aktivieren.
+   - Web App URL im BotFather hinterlegen.
+
+2. Handy-Installation (Android/Termux):
+   - pkg install python
+   - pip install python-telegram-bot
+   - python bot.py
+
+3. Belohnungs-Logik:
+   - User zahlt 10 Sterne -> Credit +1.
+   - User spielt Runde -> Credit -1.
+   - User erreicht 100+ Pkt -> Credit +1 (Freispiel).
+==================================================
