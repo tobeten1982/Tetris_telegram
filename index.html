@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Final Stable</title>
+    <title>Vision Tetris Pro - Ultimate Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -39,8 +39,7 @@
         }
 
         /* --- BUTTONS --- */
-        .btn-main { width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; margin-bottom: 8px; font-size: 1em; transition: opacity 0.2s; }
-        .btn-main:active { opacity: 0.8; }
+        .btn-main { width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; margin-bottom: 8px; font-size: 1em; }
         .btn-green { background: var(--tg-btn); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-outline { background: #f0f0f0; color: #444; }
@@ -48,7 +47,7 @@
         /* --- TOASTS --- */
         #level-up-toast, #highscore-toast {
             position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            font-weight: 900; font-size: 2.5em; pointer-events: none;
+            font-weight: 900; font-size: 2.2em; pointer-events: none;
             z-index: 2000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             opacity: 0; white-space: nowrap; text-align: center; text-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
@@ -63,7 +62,6 @@
         .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
         .coin-btn { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; margin-top: 8px; cursor: pointer; z-index: 20; position: relative; }
 
-        /* --- PIECE GRID --- */
         .piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
         .p-btn { background: #222; border: 2px solid #444; border-radius: 10px; padding: 8px; cursor: pointer; color: white; font-weight: bold; }
         .inventory-bar { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; min-height: 30px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
@@ -75,7 +73,7 @@
 </head>
 <body>
 
-    <div id="level-up-toast" style="color:var(--accent);">LEVEL UP! 🚀</div>
+    <div id="level-up-toast" style="color:var(--accent);">LEVEL UP! 🚀<br><small style="font-size:0.5em;">+8 💰 & Tempo+</small></div>
     <div id="highscore-toast" style="color:var(--coin-gold);">NEW RECORD! 🔥</div>
 
     <div id="admin-panel">
@@ -93,10 +91,10 @@
         <div class="menu-card">
             <h2 style="margin-top:0;">📜 Spielregeln</h2>
             <div style="text-align: left; font-size: 0.85em; background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px; line-height: 1.4;">
-                • <b>Level-Up:</b> Alle 100 Pkt. (+5 Münzen)<br>
+                • <b>Level-Up:</b> Alle 50 Pkt. (+8 Münzen)<br>
                 • <b>Shop:</b> Wunschsteine kosten 4 💰.<br>
                 • <b>Vision:</b> Alle 20 Pkt. +10 Visionen.<br>
-                • <b>Schwierigkeit:</b> Erhöht sich pro Level!
+                • <b>Reihen-Bonus:</b> 4 Reihen = <b>+4 Münzen</b> 💰!
             </div>
             <button class="btn-main btn-green" onclick="toggleRules(false)">VERSTANDEN</button>
         </div>
@@ -108,14 +106,14 @@
             <div id="player-name-display" style="background:#f0f0f0; padding:12px; border-radius:12px; margin:15px 0; font-weight:bold; cursor:pointer;">Spieler</div>
             <div style="margin-bottom:15px; font-size: 1.1em;">💰 Münzen: <span id="menu-coins" style="color: #e67e22; font-weight: bold;">0</span></div>
             <select id="speed-select" style="width:100%; padding:14px; border-radius:12px; margin-bottom:12px; border:2px solid #ddd; font-weight:bold; background: white;">
-                <option value="850">Easy (Entspannt)</option>
-                <option value="600" selected>Normal (Standard)</option>
-                <option value="350">Hard (Herausforderung)</option>
-                <option value="150">Visionary (Extrem) 🔥</option>
+                <option value="850">Easy</option>
+                <option value="600" selected>Normal</option>
+                <option value="350">Hard</option>
+                <option value="150">Visionary 🔥</option>
             </select>
             <button class="btn-main btn-green" style="font-size:1.2em; padding: 18px;" onclick="startGame()">JETZT STARTEN</button>
             <button class="btn-main btn-outline" onclick="toggleRules(true)">ANLEITUNG</button>
-            <div style="margin-top:15px; font-weight:bold; font-size:0.75em; color:#bbb; border-top: 1px solid #eee; padding-top: 10px;">DEINE BESTENLISTE</div>
+            <div style="margin-top:15px; font-weight:bold; font-size:0.75em; color:#bbb; border-top: 1px solid #eee; padding-top: 10px;">BESTENLISTE</div>
             <ul id="menu-hs-list"></ul>
         </div>
     </div>
@@ -133,7 +131,6 @@
                 <button class="p-btn" style="border-color: #FF0D72;" onclick="selectPiece('Z')">Z</button>
             </div>
             <div id="shop-inventory" class="inventory-bar"></div>
-            <p style="font-size: 0.7em; color: #888; margin: 10px 0;">Gekaufte Steine erscheinen als Nächstes.</p>
             <button class="btn-main btn-green" onclick="closeShop()">ZURÜCK</button>
         </div>
     </div>
@@ -193,11 +190,10 @@
         }
         adminTimer = setTimeout(() => adminClicks = 0, 2000);
     };
-
     function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
     function adminAddCoins() { coins += 500; saveCoins(); updateUI(); }
-    function adminResetCoins() { if(confirm("Münzen wirklich auf 0 setzen?")) { coins = 0; saveCoins(); updateUI(); } }
-    function adminResetScores() { if(confirm("Alle Highscores wirklich löschen?")) { localStorage.removeItem('tetrisScores'); loadLocalScores(); } }
+    function adminResetCoins() { if(confirm("Münzen auf 0?")) { coins = 0; saveCoins(); updateUI(); } }
+    function adminResetScores() { if(confirm("Bestenliste löschen?")) { localStorage.removeItem('tetrisScores'); loadLocalScores(); } }
 
     // --- ENGINE ---
     function createMat(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
@@ -218,11 +214,11 @@
     }
 
     function updateDifficulty() {
-        const curLvl = Math.floor(score / 100) + 1;
+        const curLvl = Math.floor(score / 50) + 1;
         if (curLvl > lastLevelMilestone) {
             lastLevelMilestone = curLvl;
-            coins += 5;
-            dropInterval = Math.max(100, dropInterval * 0.9);
+            coins += 8;
+            dropInterval = Math.max(100, dropInterval * 0.92);
             saveCoins();
             showToast('level-up-toast');
             tg.HapticFeedback.notificationOccurred('success');
@@ -249,7 +245,7 @@
 
     function draw() {
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
-        const curLvl = Math.floor(score / 100) + 1;
+        const curLvl = Math.floor(score / 50) + 1;
         ctx.shadowBlur = (curLvl >= 2) ? Math.min(15, curLvl * 2) : 0;
         ctx.shadowColor = "white";
         drawMat(ctx, arena, {x:0, y:0});
@@ -265,7 +261,6 @@
         } else {
             nctx.fillStyle = "#333"; nctx.font = "bold 4px Arial"; nctx.fillText("?", 1.5, 3.5);
             document.getElementById('vision-label').innerText = "BLIND";
-            document.getElementById('vision-label').style.color = "white";
         }
         updateUI();
     }
@@ -316,6 +311,7 @@
         }
         if (rows > 0) {
             score += [0, 10, 30, 50, 160][rows];
+            if (rows === 4) { coins += 4; tg.HapticFeedback.notificationOccurred('warning'); }
             if (score > personalBest && personalBest > 0 && !hsNotified) { hsNotified = true; showToast('highscore-toast'); }
             if (Math.floor(score / 20) > lastVisionMilestone) { lastVisionMilestone = Math.floor(score/20); visionPieces += 10; }
             updateDifficulty();
@@ -330,7 +326,6 @@
         rAF = requestAnimationFrame(update);
     }
 
-    // --- UI FUNKTIONEN ---
     function selectPiece(t) {
         if (coins >= 4) {
             coins -= 4; customQueue.push(t); saveCoins();
