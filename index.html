@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Admin Edition</title>
+    <title>Vision Tetris Pro - Global</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -71,8 +71,8 @@
             <h2 style="margin: 0 0 15px 0;">📜 Spielregeln</h2>
             <div class="rules-content">
                 <ul style="list-style: none; padding: 0; margin: 0;">
-                    <li style="margin-bottom: 10px;">🙈 <b>Blind:</b> Keine Vorschau anfangs.</li>
-                    <li style="margin-bottom: 10px;">👁️ <b>Vision:</b> +20 Score = 10 Visionen.</li>
+                    <li style="margin-bottom: 10px;">🙈 <b>Blind:</b> Keine Vorschau am Anfang.</li>
+                    <li style="margin-bottom: 10px;">👁️ <b>Vision:</b> +20 Punkte = 10 Visionen.</li>
                     <li style="margin-bottom: 10px;">🛒 <b>Shop:</b> Steine für 4 💰 kaufen.</li>
                     <li>🏆 <b>Global:</b> Bestenliste für alle!</li>
                 </ul>
@@ -148,7 +148,8 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const DB_URL = "https://kvdb.io/VisionTetrisPro_v1_9922/scores";
+    // Frische Datenbank-ID
+    const DB_URL = "https://kvdb.io/vision_pro_7788_final/scores";
     const canvas = document.getElementById('t');
     const ctx = canvas.getContext('2d');
     const nctx = document.getElementById('nextCanvas').getContext('2d');
@@ -161,14 +162,14 @@
     let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
     let customQueue = [];
 
-    // --- ADMIN LOGIK ---
+    // --- ADMIN ---
     let adminClicks = 0;
     document.getElementById('player-name-display').onclick = function() {
         adminClicks++;
         if (adminClicks === 3) {
-            const pw = prompt("Admin Passwort:");
+            const pw = prompt("Passwort:");
             if (pw === "admin123") {
-                const action = prompt("1: Alles Resetten, 2: +999 Münzen");
+                const action = prompt("1: Reset, 2: +999 💰");
                 if (action === "1") { localStorage.clear(); location.reload(); }
                 else if (action === "2") { coins += 999; saveCoins(); location.reload(); }
             }
@@ -190,26 +191,40 @@
         if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
     }
 
+    // --- GLOBAL SCORES (REPARIERT) ---
     async function saveGlobalScore() {
         let name = (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast");
         try {
             const res = await fetch(DB_URL);
-            let hs = res.ok ? await res.json() : [];
+            let hs = [];
+            if (res.ok) {
+                const data = await res.json();
+                hs = Array.isArray(data) ? data : [];
+            }
             hs.push({ name: name, score: score });
             hs.sort((a,b) => b.score - a.score);
             hs = hs.slice(0, 5);
-            await fetch(DB_URL, { method: 'POST', body: JSON.stringify(hs) });
-        } catch (e) {}
+            await fetch(DB_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(hs) 
+            });
+        } catch (e) { console.error("Save failed"); }
     }
 
     async function loadGlobalScores() {
+        const list = document.getElementById('menu-hs-list');
         try {
             const res = await fetch(DB_URL);
             if (res.ok) {
                 const hs = await res.json();
-                document.getElementById('menu-hs-list').innerHTML = hs.map(e => `<li>${e.name} <span>${e.score}</span></li>`).join('');
+                if (Array.isArray(hs) && hs.length > 0) {
+                    list.innerHTML = hs.map((e,i) => `<li>${i+1}. ${e.name} <span>${e.score}</span></li>`).join('');
+                } else {
+                    list.innerHTML = "<li>Warte auf ersten Rekord...</li>";
+                }
             }
-        } catch (e) {}
+        } catch (e) { list.innerHTML = "<li>Offline-Modus</li>"; }
     }
 
     function openShop() { paused = true; document.getElementById('shop-overlay').style.display = 'flex'; updateShopStatus(); }
@@ -320,7 +335,7 @@
         document.getElementById('menu-coins').innerText = coins;
         document.getElementById('coin-count').innerText = coins;
         const u = tg.initDataUnsafe.user;
-        document.getElementById('player-name-display').innerText = u ? u.first_name : "Spieler";
+        document.getElementById('player-name-display').innerText = u ? u.first_name : "Gast";
         loadGlobalScores();
     })();
 </script>
