@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Global</title>
+    <title>Vision Tetris Pro - Admin Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -22,7 +22,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- OVERLAYS --- */
         #menu-overlay, #shop-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             z-index: 100; display: flex; justify-content: center; align-items: center;
@@ -35,8 +34,6 @@
             backdrop-filter: blur(8px);
         }
 
-        #shop-overlay { background: rgba(0,0,0,0.9); z-index: 150; display: none; }
-
         .menu-card {
             background: #ffffff; color: #222; padding: 25px; border-radius: 24px;
             width: 85%; max-width: 320px; text-align: center;
@@ -46,11 +43,11 @@
         .name-badge { 
             background: #f8f9fa; border: 1px solid #e0e0e0; padding: 12px; 
             border-radius: 12px; font-weight: 700; margin-bottom: 10px;
+            cursor: pointer; user-select: none;
         }
 
         .rules-content { text-align: left; font-size: 0.9em; background: #f8f9fa; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin-bottom: 20px; }
 
-        /* --- GAME UI --- */
         .header-box { margin-top: 15px; display: flex; gap: 15px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; font-size: 0.9em; }
         #next-container { position: absolute; top: 0; right: -75px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; border: 2px solid #444; width: 55px; text-align: center; }
         canvas#t { border: 4px solid #333; border-radius: 15px; background: #000; }
@@ -74,10 +71,10 @@
             <h2 style="margin: 0 0 15px 0;">📜 Spielregeln</h2>
             <div class="rules-content">
                 <ul style="list-style: none; padding: 0; margin: 0;">
-                    <li style="margin-bottom: 10px;">🙈 <b>Blind:</b> Die Vorschau ist anfangs deaktiviert.</li>
-                    <li style="margin-bottom: 10px;">👁️ <b>Vision:</b> Level-Up gibt 10 Visionen frei.</li>
+                    <li style="margin-bottom: 10px;">🙈 <b>Blind:</b> Keine Vorschau anfangs.</li>
+                    <li style="margin-bottom: 10px;">👁️ <b>Vision:</b> +20 Score = 10 Visionen.</li>
                     <li style="margin-bottom: 10px;">🛒 <b>Shop:</b> Steine für 4 💰 kaufen.</li>
-                    <li>🏆 <b>Global:</b> Bestenliste für alle Spieler!</li>
+                    <li>🏆 <b>Global:</b> Bestenliste für alle!</li>
                 </ul>
             </div>
             <button class="secondary-btn" style="background: var(--tg-btn);" onclick="toggleRules(false)">VERSTANDEN</button>
@@ -152,7 +149,6 @@
     tg.expand();
 
     const DB_URL = "https://kvdb.io/VisionTetrisPro_v1_9922/scores";
-
     const canvas = document.getElementById('t');
     const ctx = canvas.getContext('2d');
     const nctx = document.getElementById('nextCanvas').getContext('2d');
@@ -165,12 +161,23 @@
     let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
     let customQueue = [];
 
-    // --- REGELN FIX ---
-    function toggleRules(show) {
-        const rules = document.getElementById('rules-overlay');
-        rules.style.display = show ? 'flex' : 'none';
-    }
+    // --- ADMIN LOGIK ---
+    let adminClicks = 0;
+    document.getElementById('player-name-display').onclick = function() {
+        adminClicks++;
+        if (adminClicks === 3) {
+            const pw = prompt("Admin Passwort:");
+            if (pw === "admin123") {
+                const action = prompt("1: Alles Resetten, 2: +999 Münzen");
+                if (action === "1") { localStorage.clear(); location.reload(); }
+                else if (action === "2") { coins += 999; saveCoins(); location.reload(); }
+            }
+            adminClicks = 0;
+        }
+        setTimeout(() => adminClicks = 0, 2000);
+    };
 
+    function toggleRules(show) { document.getElementById('rules-overlay').style.display = show ? 'flex' : 'none'; }
     function createMat(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
 
     function createPiece(type) {
@@ -192,7 +199,7 @@
             hs.sort((a,b) => b.score - a.score);
             hs = hs.slice(0, 5);
             await fetch(DB_URL, { method: 'POST', body: JSON.stringify(hs) });
-        } catch (e) { console.log("Cloud Error"); }
+        } catch (e) {}
     }
 
     async function loadGlobalScores() {
@@ -202,7 +209,7 @@
                 const hs = await res.json();
                 document.getElementById('menu-hs-list').innerHTML = hs.map(e => `<li>${e.name} <span>${e.score}</span></li>`).join('');
             }
-        } catch (e) { document.getElementById('menu-hs-list').innerHTML = "Noch keine Einträge."; }
+        } catch (e) {}
     }
 
     function openShop() { paused = true; document.getElementById('shop-overlay').style.display = 'flex'; updateShopStatus(); }
@@ -221,7 +228,7 @@
     function startGame() {
         dropInterval = parseInt(document.getElementById('speed-select').value);
         document.getElementById('menu-overlay').classList.add('hidden');
-        toggleRules(false); // Regeln sicher schließen
+        toggleRules(false);
         paused = false; pReset(); update();
     }
 
@@ -253,6 +260,7 @@
             nctx.fillStyle = "#333"; nctx.font = "bold 3px Arial"; nctx.fillText("?", 1.5, 3.5);
             document.getElementById('vision-label').innerText = "BLIND";
         }
+        document.getElementById('v-count').innerText = visionPieces;
     }
 
     function drawMat(c, m, o) {
@@ -311,7 +319,8 @@
     (function init() {
         document.getElementById('menu-coins').innerText = coins;
         document.getElementById('coin-count').innerText = coins;
-        document.getElementById('player-name-display').innerText = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Spieler";
+        const u = tg.initDataUnsafe.user;
+        document.getElementById('player-name-display').innerText = u ? u.first_name : "Spieler";
         loadGlobalScores();
     })();
 </script>
