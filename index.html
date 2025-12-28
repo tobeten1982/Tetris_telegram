@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Shop Edition</title>
+    <title>Vision Tetris Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -22,7 +22,7 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- MENÜ OVERLAY --- */
+        /* --- OVERLAYS --- */
         #menu-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             z-index: 100; display: flex; justify-content: center; align-items: center;
@@ -40,7 +40,6 @@
             cursor: pointer; user-select: none;
         }
 
-        /* --- SHOP UI --- */
         #shop-overlay {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(0,0,0,0.95); border: 2px solid var(--coin-gold);
@@ -50,39 +49,14 @@
 
         .piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
         .piece-opt { background: #333; border: 1px solid #555; border-radius: 8px; padding: 10px; font-weight: bold; color: white; cursor: pointer; }
-        .piece-opt:active { background: var(--coin-gold); color: black; }
 
-        /* --- UI & GAME --- */
+        /* --- GAME UI --- */
         .header-box { margin-top: 15px; display: flex; gap: 15px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; font-size: 0.9em; }
-        
-        #next-container { 
-            position: absolute; top: 0; right: -75px; 
-            background: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; border: 2px solid #444; 
-            text-align: center; width: 55px;
-        }
-
+        #next-container { position: absolute; top: 0; right: -75px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; border: 2px solid #444; width: 55px; text-align: center; }
         canvas#t { border: 4px solid #333; border-radius: 15px; background: #000; }
-        
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; }
         .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 65px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
-        
-        .coin-btn {
-            background: linear-gradient(45deg, #ffd700, #ffa500); color: #000;
-            border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; font-size: 0.9em; margin-top: 8px; cursor: pointer;
-        }
-
-        #level-up-notice {
-            position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%);
-            color: var(--accent); font-size: 2.2em; font-weight: 900; z-index: 200; pointer-events: none; opacity: 0;
-        }
-
-        .animate-up { animation: levelUpAnim 1.5s forwards; }
-        @keyframes levelUpAnim {
-            0% { opacity: 0; transform: translate(-50%, 0%) scale(0.5); }
-            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-            100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); }
-        }
-
+        .coin-btn { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; margin-top: 8px; }
         .hidden { display: none !important; }
         #menu-hs-list { list-style: none; padding: 0; margin-top: 10px; }
         #menu-hs-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 0.9em; }
@@ -90,12 +64,9 @@
 </head>
 <body>
 
-    <div id="level-up-notice">VISION UP!</div>
-
     <div id="shop-overlay">
         <div style="font-weight: bold; color: var(--coin-gold); font-size: 1.1em;">Stein-Markt</div>
         <div id="shop-status" style="font-size: 0.85em; margin: 8px 0; color: #bbb;">Wähle Steine (4 💰 pro Stück)</div>
-        
         <div class="piece-grid">
             <button class="piece-opt" onclick="selectPiece('I')">I</button>
             <button class="piece-opt" onclick="selectPiece('O')">O</button>
@@ -105,26 +76,21 @@
             <button class="piece-opt" onclick="selectPiece('J')">J</button>
             <button class="piece-opt" onclick="selectPiece('L')">L</button>
         </div>
-
-        <button onclick="closeShop()" style="width: 100%; margin-top: 10px; padding: 15px; background: var(--tg-btn); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1em;">OK - Weiterspielen</button>
+        <button onclick="closeShop()" style="width: 100%; margin-top: 10px; padding: 15px; background: var(--tg-btn); color: white; border: none; border-radius: 12px; font-weight: bold;">OK - WEITER</button>
     </div>
 
     <div id="menu-overlay">
         <div class="menu-card">
-            <h2 style="margin-top: 0;">Vision Tetris</h2>
+            <h2 style="margin: 0;">Vision Tetris</h2>
             <div id="player-name-display" class="name-badge">Spieler</div>
-            <div style="margin-bottom: 15px;">💰 Münzen: <span id="menu-coins" style="font-weight: bold;">0</span></div>
-            
-            <select id="speed-select" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #ddd; font-weight: bold;">
+            <div style="margin-bottom: 15px;">💰 Münzen: <span id="menu-coins">0</span></div>
+            <select id="speed-select" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 20px;">
                 <option value="900">Easy</option>
                 <option value="650" selected>Normal</option>
                 <option value="400">Hard</option>
                 <option value="200">Extreme</option>
             </select>
-
-            <button style="width:100%; padding:16px; border-radius:14px; border:none; background:var(--tg-btn); color:white; font-weight:bold; font-size: 1.1em;" onclick="startGame()">JETZT STARTEN</button>
-            
-            <div style="margin-top: 20px; font-size: 0.85em; color: #888; text-align: left;">🏆 Top Scores:</div>
+            <button style="width:100%; padding:16px; border-radius:14px; border:none; background:var(--tg-btn); color:white; font-weight:bold;" onclick="startGame()">STARTEN</button>
             <ul id="menu-hs-list"></ul>
         </div>
     </div>
@@ -166,21 +132,18 @@
     const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
     let arena = createMat(12, 20);
     let player = { pos: {x: 0, y: 0}, mat: null };
-    let nextPieceMat = null;
-    let score = 0, visionPieces = 0, lastMilestone = 0, paused = true, dropInterval = 650, dropCount = 0, lastTime = 0;
+    let nextPieceMat = null, score = 0, visionPieces = 0, lastMilestone = 0, paused = true, dropInterval = 650, dropCount = 0, lastTime = 0;
     let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
     let customQueue = [];
 
-    // --- ADMIN LOGIK ---
+    // --- ADMIN ---
     let adminClicks = 0;
-    const ADMIN_PW = "admin123"; 
-
     document.getElementById('player-name-display').onclick = function() {
         adminClicks++;
         if (adminClicks === 3) {
-            const pw = prompt("Admin Passwort:");
-            if (pw === ADMIN_PW) {
-                const a = prompt("1: Reset, 2: +999 Münzen");
+            const pw = prompt("Admin PW:");
+            if (pw === "admin123") {
+                const a = prompt("1: Reset, 2: +999 💰");
                 if (a === "1") { localStorage.clear(); location.reload(); }
                 else if (a === "2") { coins += 999; saveCoins(); location.reload(); }
             }
@@ -201,36 +164,19 @@
         if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
     }
 
-    // --- SHOP LOGIK ---
-    function openShop() {
-        paused = true;
-        document.getElementById('shop-overlay').style.display = 'block';
-        updateShopStatus();
-    }
-
+    // --- SHOP ---
+    function openShop() { paused = true; document.getElementById('shop-overlay').style.display = 'block'; updateShopStatus(); }
     function selectPiece(type) {
-        if (coins < 4) return tg.showAlert("Du brauchst 4 Münzen!");
-        customQueue.push(type);
-        coins -= 4; saveCoins();
-        tg.HapticFeedback.impactOccurred('medium');
-        updateShopStatus();
+        if (coins < 4) return tg.showAlert("Zu wenig Münzen!");
+        customQueue.push(type); coins -= 4; saveCoins();
+        tg.HapticFeedback.impactOccurred('medium'); updateShopStatus();
         document.getElementById('coin-count').innerText = coins;
     }
-
     function updateShopStatus() {
-        const status = document.getElementById('shop-status');
-        if (customQueue.length > 0) {
-            status.innerHTML = `<span style="color:var(--tg-btn)">Gekauft: ${customQueue.join(', ')}</span>`;
-        } else {
-            status.innerText = "Wähle Steine (4 💰 pro Stück)";
-        }
+        const s = document.getElementById('shop-status');
+        s.innerHTML = customQueue.length > 0 ? `<span style="color:var(--tg-btn)">Bereit: ${customQueue.join(', ')}</span>` : "Wähle Steine (4 💰)";
     }
-
-    function closeShop() {
-        document.getElementById('shop-overlay').style.display = 'none';
-        paused = false;
-        requestAnimationFrame(update);
-    }
+    function closeShop() { document.getElementById('shop-overlay').style.display = 'none'; paused = false; requestAnimationFrame(update); }
 
     function startGame() {
         dropInterval = parseInt(document.getElementById('speed-select').value);
@@ -242,14 +188,15 @@
         player.mat = customQueue.length > 0 ? createPiece(customQueue.shift()) : nextPieceMat || createPiece('ILJOTSZ'[Math.random()*7|0]);
         nextPieceMat = createPiece('ILJOTSZ'[Math.random()*7|0]);
         player.pos = {y: 0, x: (arena[0].length/2|0)-(player.mat[0].length/2|0)};
-        
         if (visionPieces > 0) visionPieces--;
         
         if (collide(arena, player)) {
+            paused = true;
             if (score >= 40) { coins += 5; saveCoins(); }
             saveScore();
-            alert("Game Over! Score: " + score);
-            location.reload();
+            tg.showAlert("GAME OVER!\nScore: " + score, function() {
+                location.reload(); 
+            });
         }
         draw();
     }
@@ -258,22 +205,14 @@
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
         drawMat(ctx, arena, {x:0, y:0});
         drawMat(ctx, player.mat, player.pos);
-        
         nctx.fillStyle = '#000'; nctx.fillRect(0, 0, 40, 40);
-        const label = document.getElementById('vision-label');
-        
         if (visionPieces > 0 || customQueue.length > 0) {
             drawMat(nctx, nextPieceMat, {x:0.5, y:0.5});
-            label.innerText = customQueue.length > 0 ? "SHOP" : "VISION";
-            label.style.color = "#4caf50";
+            document.getElementById('vision-label').innerText = "VISION";
         } else {
-            nctx.fillStyle = "#333"; nctx.font = "bold 3px Arial";
-            nctx.fillText("?", 1.5, 3.5);
-            label.innerText = "BLIND";
-            label.style.color = "#f44336";
+            nctx.fillStyle = "#333"; nctx.font = "bold 3px Arial"; nctx.fillText("?", 1.5, 3.5);
+            document.getElementById('vision-label').innerText = "BLIND";
         }
-        document.getElementById('coin-count').innerText = coins;
-        document.getElementById('v-count').innerText = visionPieces;
     }
 
     function drawMat(c, m, o) {
@@ -292,14 +231,7 @@
         if (rows > 0) {
             score += [0, 10, 30, 50, 200][rows];
             document.getElementById('s').innerText = score;
-            let milestone = Math.floor(score / 20);
-            if (milestone > lastMilestone) {
-                visionPieces += 10;
-                lastMilestone = milestone;
-                const note = document.getElementById('level-up-notice');
-                note.classList.add('animate-up');
-                setTimeout(() => note.classList.remove('animate-up'), 1500);
-            }
+            if (Math.floor(score / 20) > lastMilestone) { visionPieces += 10; lastMilestone = Math.floor(score/20); }
         }
     }
 
@@ -317,45 +249,37 @@
         dropCount = 0;
     }
 
-    function merge(a, p) {
-        p.mat.forEach((r, y) => r.forEach((v, x) => { if (v !== 0) a[y+p.pos.y][x+p.pos.x] = v; }));
-    }
-
-    function pRotate() {
-        const m = player.mat;
+    function merge(a, p) { p.mat.forEach((r, y) => r.forEach((v, x) => { if (v !== 0) a[y+p.pos.y][x+p.pos.x] = v; })); }
+    function pRotate() { 
+        const m = player.mat; 
         for (let y = 0; y < m.length; ++y) for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]];
         m.forEach(r => r.reverse());
-        if (collide(arena, player)) { m.forEach(r => r.reverse()); }
+        if (collide(arena, player)) m.forEach(r => r.reverse());
         draw();
     }
-
     function pMove(d) { player.pos.x += d; if (collide(arena, player)) player.pos.x -= d; draw(); }
 
     function update(time = 0) {
         if (paused) return;
-        const dt = time - lastTime;
-        lastTime = time;
-        dropCount += dt;
+        const dt = time - lastTime; lastTime = time; dropCount += dt;
         if (dropCount > dropInterval) pDrop();
         draw(); requestAnimationFrame(update);
     }
 
     function saveCoins() { localStorage.setItem('tetrisCoins', coins); }
-
     function saveScore() {
         let hs = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
-        if (score > 0) {
-            hs.push({name: (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast"), score: score});
-            hs.sort((a,b) => b.score - a.score);
-            localStorage.setItem('tetrisHS_v4', JSON.stringify(hs.slice(0, 5)));
-        }
+        hs.push({name: (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast"), score: score});
+        hs.sort((a,b) => b.score - a.score);
+        localStorage.setItem('tetrisHS_v4', JSON.stringify(hs.slice(0, 5)));
     }
 
     (function init() {
         document.getElementById('menu-coins').innerText = coins;
+        document.getElementById('coin-count').innerText = coins;
         document.getElementById('player-name-display').innerText = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast";
         const hs = JSON.parse(localStorage.getItem('tetrisHS_v4')) || [];
-        document.getElementById('menu-hs-list').innerHTML = hs.map(e => `<li>${e.name} <span>${e.score}</span></li>`).join('') || "Keine Scores";
+        document.getElementById('menu-hs-list').innerHTML = hs.map(e => `<li>${e.name} <span>${e.score}</span></li>`).join('');
     })();
 </script>
 </body>
