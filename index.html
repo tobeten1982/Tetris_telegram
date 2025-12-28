@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Final Stable</title>
+    <title>Vision Tetris Pro - Bugfree Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -15,85 +15,80 @@
         }
 
         body { 
-            background: radial-gradient(circle at center, #2c3e50, #000);
+            background: radial-gradient(circle at center, #1a2a3a, #000);
             color: var(--tg-text); 
             font-family: 'Segoe UI', Roboto, sans-serif; 
             margin: 0; padding: 0; height: 100vh; overflow: hidden;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- OVERLAYS & UI --- */
+        /* --- OVERLAYS --- */
         #menu-overlay, #shop-overlay, #rules-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.92);
             z-index: 1000; display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
         }
-        #rules-overlay, #shop-overlay { display: none; }
+        #rules-overlay { z-index: 1100; display: none; } /* Höherer Index für Regeln */
+        #shop-overlay { display: none; }
 
         .menu-card {
             background: #ffffff; color: #222; padding: 25px; border-radius: 24px;
             width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
 
-        /* --- ANIMATION TOASTS --- */
+        /* --- TOASTS --- */
         #level-up-toast, #highscore-toast {
             position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            font-weight: 900; font-size: 2.5em; pointer-events: none;
+            font-weight: 900; font-size: 2.5em; pointer-events: none; /* WICHTIG: Klicks gehen durch */
             z-index: 2000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0; white-space: nowrap;
+            opacity: 0; white-space: nowrap; text-align: center; text-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         .show-anim { transform: translate(-50%, -50%) scale(1.1) !important; opacity: 1 !important; }
 
-        .score-pulse { animation: pulse-gold 0.8s infinite; }
-        @keyframes pulse-gold {
-            0% { color: var(--accent); transform: scale(1); }
-            50% { color: var(--coin-gold); transform: scale(1.1); text-shadow: 0 0 10px gold; }
-            100% { color: var(--accent); transform: scale(1); }
-        }
-
-        /* --- GAME LAYOUT --- */
-        .header-box { margin-top: 15px; display: flex; gap: 15px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; font-size: 0.9em; z-index: 10; }
-        #t { border: 4px solid #333; border-radius: 15px; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        /* --- UI ELEMENTS --- */
+        .header-box { margin-top: 15px; display: flex; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 20px; font-size: 0.8em; z-index: 10; flex-wrap: wrap; justify-content: center; }
+        .stat-item { background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
         
+        #t { border: 4px solid #333; border-radius: 15px; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         #next-container { position: absolute; top: 0; right: -75px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; border: 2px solid #444; width: 55px; text-align: center; }
         
-        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; z-index: 10; }
+        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; z-index: 5; }
         .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
-        .game-btn:active { background: rgba(255,255,255,0.3); }
+        .coin-btn { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; margin-top: 8px; cursor: pointer; z-index: 20; position: relative; }
 
-        /* --- SHOP ELEMENTS --- */
+        /* --- SHOP & LISTS --- */
         .piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
         .piece-btn { background: #222; border: 2px solid #444; border-radius: 10px; padding: 5px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .piece-btn:active { border-color: var(--tg-btn); transform: scale(0.95); }
         .inventory-bar { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px; margin: 10px 0; min-height: 25px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
-        .inv-dot { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); }
+        .inv-dot { width: 12px; height: 12px; border-radius: 3px; }
 
-        #menu-hs-list { list-style: none; padding: 0; margin-top: 10px; text-align: left; }
+        #menu-hs-list { list-style: none; padding: 0; margin-top: 10px; text-align: left; max-height: 100px; overflow-y: auto; }
         #menu-hs-list li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 0.85em; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div id="level-up-toast" style="color:#4caf50;">LEVEL UP! 👁️</div>
+    <div id="level-up-toast" style="color:var(--accent);">LEVEL UP! 🚀<br><small style="font-size: 0.5em;">+5 💰 & Speed Up</small></div>
     <div id="highscore-toast" style="color:var(--coin-gold);">NEW RECORD! 🔥</div>
 
     <div id="rules-overlay">
         <div class="menu-card">
-            <h2>📜 Regeln</h2>
-            <div style="text-align: left; font-size: 0.85em; background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
-                • Alle 20 Pkt: <b>+10 Visionen</b>.<br>
-                • Shop: Wunschsteine (4 💰).<br>
-                • Admin: 3x Klick auf Name im Menü.<br>
-                • <b>Tipp:</b> Gekaufte Steine leuchten Gold!
+            <h2 style="margin-top:0;">📜 Spielregeln</h2>
+            <div style="text-align: left; font-size: 0.85em; line-height: 1.4; background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                • <b>Level-Up:</b> Alle 100 Pkt. (+5 Münzen)<br>
+                • <b>Tempo:</b> Erhöht sich bei jedem Level-Up.<br>
+                • <b>Shop:</b> Wunschsteine kosten 4 💰.<br>
+                • <b>Vision:</b> Alle 20 Pkt. +10 Visionen.<br>
+                • <b>Admin:</b> 3x Klick auf den Namen im Menü.
             </div>
-            <button onclick="toggleRules(false)" style="width:100%; padding:15px; background:var(--tg-btn); color:white; border:none; border-radius:12px; font-weight:bold;">OK</button>
+            <button onclick="toggleRules(false)" style="width:100%; padding:15px; background:var(--tg-btn); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">OK, LOS GEHT'S</button>
         </div>
     </div>
 
     <div id="shop-overlay">
         <div class="menu-card" style="background: #1a1a1a; color: white; border: 2px solid var(--coin-gold);">
-            <div style="font-weight:bold; color:var(--coin-gold); margin-bottom: 10px;">Stein-Markt (4 💰)</div>
+            <div style="font-weight:bold; color:var(--coin-gold);">Marktplatz (4 💰)</div>
             <div class="piece-grid">
                 <button class="piece-btn" onclick="selectPiece('I')"><svg width="30" height="30" viewBox="0 0 40 40"><rect x="0" y="15" width="40" height="10" fill="#0DC2FF" rx="2"/></svg></button>
                 <button class="piece-btn" onclick="selectPiece('O')"><svg width="30" height="30" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" fill="#FFE138" rx="2"/></svg></button>
@@ -103,7 +98,6 @@
                 <button class="piece-btn" onclick="selectPiece('S')"><svg width="30" height="30" viewBox="0 0 40 40"><path d="M10 25h10v-10h10v-10h-20z" fill="#0DFF72"/></svg></button>
                 <button class="piece-btn" onclick="selectPiece('Z')"><svg width="30" height="30" viewBox="0 0 40 40"><path d="M10 15h10v10h10v-10h-20z" fill="#FF0D72"/></svg></button>
             </div>
-            <div style="font-size: 0.7em; color: #888;">Deine Warteschlange:</div>
             <div id="shop-inventory" class="inventory-bar"></div>
             <button onclick="closeShop()" style="width:100%; padding:15px; background:var(--tg-btn); color:white; border:none; border-radius:12px; font-weight:bold;">ZUM SPIEL</button>
         </div>
@@ -112,24 +106,25 @@
     <div id="menu-overlay">
         <div class="menu-card">
             <h2 style="margin:0;">Vision Tetris</h2>
-            <div id="player-name-display" style="background:#f0f0f0; padding:12px; border-radius:12px; margin:15px 0; font-weight:bold; cursor:pointer;">Spieler</div>
-            <div style="margin-bottom:15px;">💰 Münzen: <span id="menu-coins">0</span></div>
-            <select id="speed-select" style="width:100%; padding:12px; border-radius:12px; margin-bottom:15px; border:2px solid #ddd; font-weight:bold;">
-                <option value="800">Easy</option>
-                <option value="600" selected>Normal</option>
-                <option value="350">Hard</option>
+            <div id="player-name-display" style="background:#f0f0f0; padding:12px; border-radius:12px; margin:15px 0; font-weight:bold; cursor:pointer; color:#333;">Spieler</div>
+            <div style="margin-bottom:15px; font-size:1.1em;">💰 Münzen: <span id="menu-coins" style="font-weight:bold; color:#f39c12;">0</span></div>
+            <select id="speed-select" style="width:100%; padding:14px; border-radius:12px; margin-bottom:12px; border:2px solid #ddd; font-weight:bold;">
+                <option value="750">Normaler Start</option>
+                <option value="500">Schneller Start</option>
+                <option value="300">Profi Start</option>
             </select>
-            <button onclick="startGame()" style="width:100%; padding:18px; border-radius:14px; background:var(--tg-btn); color:white; font-weight:bold; border:none; font-size:1.1em;">START</button>
-            <button onclick="toggleRules(true)" style="width:100%; padding:10px; margin-top:10px; background:none; border:none; color:#999; font-weight:bold;">REGELN</button>
-            <div style="margin-top:20px; font-weight:bold; font-size:0.8em; color:#bbb; border-top:1px solid #eee; padding-top:10px;">TOP SCORES</div>
+            <button onclick="startGame()" style="width:100%; padding:18px; border-radius:14px; background:var(--tg-btn); color:white; font-weight:bold; border:none; font-size:1.1em; cursor:pointer;">START</button>
+            <button onclick="toggleRules(true)" style="width:100%; padding:10px; margin-top:8px; border:none; background:none; color:#666; font-weight:bold; cursor:pointer;">📜 REGELN LESEN</button>
+            <div style="margin-top:15px; font-weight:bold; font-size:0.75em; color:#bbb; border-top:1px solid #eee; padding-top:10px;">TOP 5 HIGHSCORES</div>
             <ul id="menu-hs-list"></ul>
         </div>
     </div>
 
     <div class="header-box">
-        <div id="score-container">Score: <span id="s" style="color:var(--accent); font-weight:bold;">0</span></div>
-        <div>Vision: <span id="v-count" style="color:#4caf50;">0</span></div>
-        <div>💰: <span id="coin-count">0</span></div>
+        <div class="stat-item">Lv: <span id="lvl-display" style="color:var(--accent);">1</span></div>
+        <div class="stat-item">Pkt: <span id="s">0</span></div>
+        <div class="stat-item">Vision: <span id="v-count" style="color:#4caf50;">0</span></div>
+        <div class="stat-item">💰: <span id="coin-count">0</span></div>
     </div>
     <button class="coin-btn" onclick="openShop()">🛒 Shop öffnen</button>
 
@@ -162,25 +157,36 @@
     const PIECE_COLORS = {I:'#0DC2FF', O:'#FFE138', T:'#F538FF', L:'#FF8E0D', J:'#3877FF', S:'#0DFF72', Z:'#FF0D72'};
     
     let arena = createMat(12, 20), player = { pos: {x: 0, y: 0}, mat: null };
-    let nextPieceMat = null, score = 0, visionPieces = 0, lastMilestone = 0, paused = true, dropInterval = 600, dropCount = 0, lastTime = 0;
+    let nextPieceMat = null, score = 0, visionPieces = 0, lastVisionMilestone = 0, lastLevelMilestone = 1;
+    let paused = true, dropInterval = 750, dropCount = 0, lastTime = 0, rAF = null;
     let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
     let customQueue = [];
-    let personalBest = 0, hsNotified = false, rAF = null;
+    let personalBest = 0, hsNotified = false;
 
-    // --- ADMIN & REGELN ---
+    // --- ADMIN FUNKTION (BUG-FREE) ---
     let adminClicks = 0;
+    let adminTimer;
     document.getElementById('player-name-display').onclick = () => {
+        clearTimeout(adminTimer);
         adminClicks++;
         if (adminClicks === 3) {
-            let code = prompt("Admin-Code:");
-            if (code === "admin123") { coins += 500; saveCoins(); location.reload(); }
+            let p = prompt("Admin-Passwort:");
+            if(p === "admin123") {
+                coins += 500;
+                saveCoins();
+                updateUI();
+                alert("500 Münzen hinzugefügt!");
+            }
             adminClicks = 0;
         }
+        adminTimer = setTimeout(() => { adminClicks = 0; }, 3000); // Reset nach 3 Sek
     };
 
-    function toggleRules(show) { document.getElementById('rules-overlay').style.display = show ? 'flex' : 'none'; }
+    function toggleRules(s) { 
+        document.getElementById('rules-overlay').style.display = s ? 'flex' : 'none'; 
+    }
 
-    // --- ENGINE CORE ---
+    // --- ENGINE ---
     function createMat(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
     function createPiece(t) {
         if (t === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
@@ -195,16 +201,21 @@
     function showToast(id) {
         const t = document.getElementById(id);
         t.classList.add('show-anim');
-        setTimeout(() => t.classList.remove('show-anim'), 2000);
+        setTimeout(() => t.classList.remove('show-anim'), 2500);
     }
 
-    function checkHighscore() {
-        if (score > personalBest && personalBest > 0 && !hsNotified) {
-            hsNotified = true;
-            showToast('highscore-toast');
-            document.getElementById('score-container').classList.add('score-pulse');
-            tg.HapticFeedback.notificationOccurred('warning');
+    function updateDifficulty() {
+        const curLvl = Math.floor(score / 100) + 1;
+        if (curLvl > lastLevelMilestone) {
+            lastLevelMilestone = curLvl;
+            coins += 5;
+            dropInterval = Math.max(120, dropInterval * 0.9);
+            saveCoins();
+            showToast('level-up-toast');
+            tg.HapticFeedback.notificationOccurred('success');
         }
+        document.getElementById('lvl-display').innerText = curLvl;
+        updateUI();
     }
 
     function pReset() {
@@ -218,7 +229,6 @@
         if (visionPieces > 0) visionPieces--;
         if (collide(arena, player)) {
             paused = true;
-            if (score >= 40) { coins += 5; saveCoins(); }
             saveLocalScore();
             tg.showAlert("GAME OVER!\nScore: " + score, () => location.reload());
         }
@@ -227,9 +237,15 @@
 
     function draw() {
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
+        
+        const curLvl = Math.floor(score / 100) + 1;
+        ctx.shadowBlur = (curLvl >= 2) ? Math.min(15, curLvl * 2) : 0;
+        ctx.shadowColor = "rgba(255,255,255,0.4)";
+
         drawMat(ctx, arena, {x:0, y:0});
         drawMat(ctx, player.mat, player.pos);
         
+        nctx.shadowBlur = 0;
         nctx.fillStyle = '#000'; nctx.fillRect(0, 0, 40, 40);
         const isCustom = (customQueue.length > 0);
         if (visionPieces > 0 || isCustom) {
@@ -238,18 +254,26 @@
             document.getElementById('vision-label').innerText = "VISION";
             document.getElementById('vision-label').style.color = isCustom ? "gold" : "#4caf50";
         } else {
-            nctx.fillStyle = "#333"; nctx.font = "bold 3px Arial"; nctx.fillText("?", 1.5, 3.5);
+            nctx.fillStyle = "#333"; nctx.font = "bold 4px Arial"; nctx.fillText("?", 1.5, 3.5);
             document.getElementById('vision-label').innerText = "BLIND";
             document.getElementById('vision-label').style.color = "white";
         }
+        updateUI();
+    }
+
+    function updateUI() {
         document.getElementById('s').innerText = score;
         document.getElementById('coin-count').innerText = coins;
+        document.getElementById('menu-coins').innerText = coins;
         document.getElementById('v-count').innerText = visionPieces;
     }
 
     function drawMat(c, m, o, gold = false) {
         m.forEach((r, y) => r.forEach((v, x) => {
-            if (v !== 0) { c.fillStyle = gold ? "gold" : COLORS[v]; c.fillRect(x + o.x, y + o.y, 1, 1); }
+            if (v !== 0) { 
+                c.fillStyle = gold ? "gold" : COLORS[v]; 
+                c.fillRect(x + o.x, y + o.y, 1, 1); 
+            }
         }));
     }
 
@@ -285,14 +309,10 @@
             rows++; y++;
         }
         if (rows > 0) {
-            score += [0, 10, 30, 50, 200][rows];
-            checkHighscore();
-            if (Math.floor(score / 20) > lastMilestone) { 
-                lastMilestone = Math.floor(score/20); 
-                visionPieces += 10;
-                showToast('level-up-toast');
-                tg.HapticFeedback.notificationOccurred('success');
-            }
+            score += [0, 10, 30, 50, 160][rows];
+            if (score > personalBest && personalBest > 0 && !hsNotified) { hsNotified = true; showToast('highscore-toast'); }
+            if (Math.floor(score / 20) > lastVisionMilestone) { lastVisionMilestone = Math.floor(score/20); visionPieces += 10; }
+            updateDifficulty();
         }
     }
 
@@ -304,59 +324,42 @@
         rAF = requestAnimationFrame(update);
     }
 
-    // --- UI ACTIONS ---
+    // --- SHOP ---
     function selectPiece(t) {
         if (coins >= 4) {
             coins -= 4; customQueue.push(t); saveCoins();
             tg.HapticFeedback.impactOccurred('medium');
             updateShopInventory();
-            document.getElementById('coin-count').innerText = coins;
-            document.getElementById('menu-coins').innerText = coins;
+            updateUI();
         } else { tg.showAlert("Nicht genug Münzen!"); }
     }
     function updateShopInventory() {
         const inv = document.getElementById('shop-inventory');
-        inv.innerHTML = customQueue.length === 0 ? "<small style='color:#555'>Leer</small>" : customQueue.map(t => `<div class="inv-dot" style="background:${PIECE_COLORS[t]}"></div>`).join('');
+        inv.innerHTML = customQueue.length === 0 ? "Warteschlange leer" : customQueue.map(t => `<div class="inv-dot" style="background:${PIECE_COLORS[t]}"></div>`).join('');
     }
-    function openShop() { 
-        paused = true; 
-        cancelAnimationFrame(rAF);
-        document.getElementById('shop-overlay').style.display = 'flex'; 
-        updateShopInventory(); 
-    }
-    function closeShop() { 
-        document.getElementById('shop-overlay').style.display = 'none'; 
-        paused = false; 
-        lastTime = performance.now(); 
-        update(); 
-    }
+    function openShop() { paused = true; cancelAnimationFrame(rAF); document.getElementById('shop-overlay').style.display = 'flex'; updateShopInventory(); }
+    function closeShop() { document.getElementById('shop-overlay').style.display = 'none'; paused = false; lastTime = performance.now(); update(); }
     function startGame() { 
         dropInterval = parseInt(document.getElementById('speed-select').value); 
         document.getElementById('menu-overlay').classList.add('hidden'); 
-        paused = false; 
-        lastTime = performance.now();
-        pReset(); 
-        update(); 
+        paused = false; lastTime = performance.now(); pReset(); update(); 
     }
 
     function saveLocalScore() {
-        let scores = JSON.parse(localStorage.getItem('tetrisScores')) || [];
-        scores.push({ score, date: new Date().toLocaleDateString() });
-        scores.sort((a,b) => b.score - a.score);
-        localStorage.setItem('tetrisScores', JSON.stringify(scores.slice(0,5)));
+        let scs = JSON.parse(localStorage.getItem('tetrisScores')) || [];
+        scs.push({ score, date: new Date().toLocaleDateString() });
+        scs.sort((a,b) => b.score - a.score);
+        localStorage.setItem('tetrisScores', JSON.stringify(scs.slice(0,5)));
     }
-
     function loadLocalScores() {
-        const scores = JSON.parse(localStorage.getItem('tetrisScores')) || [];
-        personalBest = scores.length > 0 ? scores[0].score : 0;
-        document.getElementById('menu-hs-list').innerHTML = scores.map(s => `<li>Score: ${s.score} <span>🏆</span></li>`).join('');
+        const scs = JSON.parse(localStorage.getItem('tetrisScores')) || [];
+        personalBest = scs.length > 0 ? scs[0].score : 0;
+        document.getElementById('menu-hs-list').innerHTML = scs.map(s => `<li>Score: ${s.score} <span>🏆</span></li>`).join('');
     }
-
     function saveCoins() { localStorage.setItem('tetrisCoins', coins); }
 
     (function init() {
-        document.getElementById('menu-coins').innerText = coins;
-        document.getElementById('coin-count').innerText = coins;
+        updateUI();
         document.getElementById('player-name-display').innerText = (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast");
         loadLocalScores();
     })();
