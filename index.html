@@ -3,111 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Final GitHub Edition</title>
+    <title>Vision Tetris Pro - Final Fix</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --tg-bg: #1a1a1a;
             --tg-text: #ffffff;
             --tg-btn: #31b545;
-            --accent: #ffeb3b;
-            --coin-gold: #ffd700;
             --danger: #ff4444;
         }
 
         body { 
-            background: radial-gradient(circle at center, #1a2a3a, #000);
-            color: var(--tg-text); 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; padding: 0; height: 100vh; overflow: hidden;
+            background: #000; color: #fff; 
+            font-family: sans-serif; margin: 0; padding: 0; 
+            height: 100vh; overflow: hidden;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- OVERLAYS --- */
-        #menu-overlay, #shop-overlay, #rules-overlay, #admin-panel {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.92);
-            z-index: 5000; display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(10px);
+        /* FIX: Höchste Priorität für Overlays */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
         }
-        #rules-overlay, #admin-panel, #shop-overlay { display: none; }
 
         .menu-card {
-            background: #ffffff; color: #222; padding: 25px; border-radius: 24px;
-            width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            background: #ffffff; color: #222; padding: 25px; border-radius: 20px;
+            width: 80%; max-width: 300px; text-align: center;
         }
 
-        .btn-main { width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; margin-bottom: 8px; font-size: 1em; }
-        .btn-green { background: var(--tg-btn); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-outline { background: #f0f0f0; color: #444; }
-
-        /* --- GAME UI --- */
-        .header-box { margin-top: 15px; display: flex; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 20px; font-size: 0.8em; z-index: 10; }
-        .stat-item { background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
-        #t { border: 4px solid #333; border-radius: 15px; background: #000; }
-        
-        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; }
-        .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
-        .quit-btn { background: #e74c3c; color: white; grid-column: span 3; border: none; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; border-bottom: 4px solid #c0392b; }
-
-        #next-container { position: absolute; top: 0; right: -75px; background: rgba(0,0,0,0.6); padding: 8px; border-radius: 12px; border: 2px solid #444; width: 50px; text-align: center; }
-        #vision-label { font-size: 8px; font-weight: bold; margin-bottom: 4px; }
+        /* Sichtbarkeits-Klassen */
         .hidden { display: none !important; }
+
+        .btn-main { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; margin: 5px 0; cursor: pointer; }
+        .btn-green { background: var(--tg-btn); color: white; }
+        .btn-outline { background: #eee; color: #333; }
+
+        #t { border: 3px solid #333; background: #000; margin-top: 10px; }
+        .header { display: flex; gap: 10px; margin-top: 10px; font-size: 0.8em; }
+        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; width: 100%; max-width: 360px; }
+        .game-btn { background: #333; color: white; border: none; height: 55px; border-radius: 10px; font-size: 20px; }
+        .quit-btn { background: var(--danger); color: white; grid-column: span 3; padding: 15px; border-radius: 10px; border: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="admin-panel">
-        <div class="menu-card" style="border: 3px solid var(--danger);">
-            <h2 style="color:var(--danger); margin-top:0;">🛠 Admin Panel</h2>
-            <button class="btn-main btn-green" onclick="adminAddCoins()">+500 💎 Token</button>
-            <button class="btn-main btn-danger" onclick="adminResetScores()">Scores löschen</button>
-            <button class="btn-main btn-outline" onclick="closeAdmin()">Schließen</button>
-        </div>
-    </div>
-
-    <div id="rules-overlay">
+    <div id="rules-overlay" class="overlay hidden">
         <div class="menu-card">
-            <h2 style="margin-top:0;">📜 Anleitung</h2>
-            <p style="text-align:left; font-size:0.85em; line-height:1.5;">
-                • <b>Level Up:</b> Alle 50 Pkt (+8 💎)<br>
-                • <b>Vision:</b> Alle 20 Pkt (+10 Sicht)<br>
-                • <b>Wunschstein:</b> 4 💎 im Shop<br>
-                • <b>Wichtig:</b> Nutze zum Beenden den roten Button, um deine 💎 zu speichern!
+            <h2 style="margin-top:0">📜 Anleitung</h2>
+            <p style="text-align:left; font-size:0.9em;">
+                • 50 Pkt = Level Up (+8 💎)<br>
+                • 20 Pkt = +10 Visionen<br>
+                • <b>Wichtig:</b> Speichere am Ende mit dem roten Button!
             </p>
             <button class="btn-main btn-green" onclick="toggleRules(false)">VERSTANDEN</button>
         </div>
     </div>
 
-    <div id="menu-overlay">
+    <div id="menu-overlay" class="overlay">
         <div class="menu-card">
-            <h2 id="player-name-display" style="cursor:pointer; margin-bottom:5px;">Spieler</h2>
-            <div style="margin-bottom:15px; font-size:1.1em;">💎 Guthaben: <span id="menu-coins" style="font-weight:bold; color:#e67e22;">0</span></div>
-            <select id="speed-select" class="btn-main btn-outline">
-                <option value="800">Modus: Easy</option>
-                <option value="600" selected>Modus: Normal</option>
-                <option value="350">Modus: Hard</option>
-            </select>
-            <button class="btn-main btn-green" onclick="startGame()">JETZT STARTEN</button>
+            <h2 id="player-name-display">Lade...</h2>
+            <p>Guthaben: <span id="menu-coins" style="font-weight:bold; color:orange;">0</span> 💎</p>
+            <button class="btn-main btn-green" onclick="startGame()">SPIEL STARTEN</button>
             <button class="btn-main btn-outline" onclick="toggleRules(true)">ANLEITUNG</button>
-            <div id="local-hs-info" style="font-size:0.7em; color:#999; margin-top:10px;"></div>
         </div>
     </div>
 
-    <div class="header-box">
-        <div class="stat-item">Lv: <span id="lvl-display">1</span></div>
-        <div class="stat-item">Pkt: <span id="s">0</span></div>
-        <div class="stat-item">Vis: <span id="v-count">0</span></div>
-        <div class="stat-item">💎: <span id="coin-count">0</span></div>
+    <div class="header">
+        <div id="lvl-display">Level 1</div>
+        <div id="s-display">Punkte: 0</div>
+        <div id="c-display">💎: 0</div>
     </div>
 
-    <div style="position:relative; margin-top:20px;">
-        <canvas id="t" width="240" height="400"></canvas>
-        <div id="next-container">
-            <div id="vision-label">BLIND</div>
-            <canvas id="nextCanvas" width="40" height="40"></canvas>
-        </div>
-    </div>
+    <canvas id="t" width="240" height="400"></canvas>
 
     <div class="controls">
         <button class="game-btn" onclick="pRotate()">↻</button>
@@ -121,107 +89,87 @@
 
 <script>
     const tg = window.Telegram.WebApp;
+    tg.ready(); // Signalisiert Telegram, dass die App bereit ist
     tg.expand();
 
-    const canvas = document.getElementById('t'), ctx = canvas.getContext('2d');
-    const nctx = document.getElementById('nextCanvas').getContext('2d');
-    ctx.scale(20, 20); nctx.scale(10, 10);
+    const canvas = document.getElementById('t');
+    const ctx = canvas.getContext('2d');
+    ctx.scale(20, 20);
 
-    const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
     let arena = Array.from({length: 20}, () => new Array(12).fill(0));
     let player = { pos: {x: 0, y: 0}, mat: null };
-    let nextPieceMat = null, score = 0, visionPieces = 0, coins = 0, paused = true;
+    let score = 0, coins = 0, paused = true;
     let dropInterval = 600, lastTime = 0, dropCount = 0;
 
-    // --- INITIALISIERUNG ---
-    function init() {
-        const params = new URLSearchParams(window.location.search);
-        const urlTokens = params.get('tokens');
-        coins = urlTokens !== null ? parseInt(urlTokens) : (parseInt(localStorage.getItem('tetrisCoins')) || 0);
-
-        // Telegram User Name Fix
-        if (tg.initDataUnsafe.user) {
-            document.getElementById('player-name-display').innerText = tg.initDataUnsafe.user.first_name;
+    // --- FIX: NAMEN LADEN ---
+    function loadUserData() {
+        const user = tg.initDataUnsafe.user;
+        const nameElement = document.getElementById('player-name-display');
+        
+        if (user && user.first_name) {
+            nameElement.innerText = user.first_name;
+        } else {
+            nameElement.innerText = "Spieler"; 
         }
 
-        updateUI();
+        const params = new URLSearchParams(window.location.search);
+        coins = parseInt(params.get('tokens')) || 0;
+        document.getElementById('menu-coins').innerText = coins;
+        document.getElementById('c-display').innerText = "💎: " + coins;
     }
 
-    // --- NAVIGATION & LOGIK ---
+    // --- FIX: ANLEITUNG LOGIK ---
     function toggleRules(show) {
-        document.getElementById('rules-overlay').style.display = show ? 'flex' : 'none';
-        if (show) paused = true;
+        const rules = document.getElementById('rules-overlay');
+        if (show) {
+            rules.classList.remove('hidden');
+        } else {
+            rules.classList.add('hidden');
+        }
     }
 
     function startGame() {
         document.getElementById('menu-overlay').classList.add('hidden');
-        document.getElementById('rules-overlay').style.display = 'none';
-        dropInterval = parseInt(document.getElementById('speed-select').value);
         paused = false;
-        if (!player.mat) pReset();
-        lastTime = performance.now();
+        pReset();
         update();
     }
 
     function quitAndSave() {
-        tg.HapticFeedback.notificationOccurred('success');
         const data = JSON.stringify({action: "sync_tokens", amount: coins});
-        tg.sendData(data); // Sendet Daten an den Bot zurück
-        setTimeout(() => tg.close(), 100);
+        tg.sendData(data);
+        tg.close();
     }
 
-    // --- ADMIN ---
-    let adminClicks = 0;
-    document.getElementById('player-name-display').onclick = () => {
-        adminClicks++;
-        if (adminClicks === 3) {
-            if(prompt("Admin Passwort:") === "admin123") document.getElementById('admin-panel').style.display = 'flex';
-            adminClicks = 0;
-        }
-    };
-    function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; }
-    function adminAddCoins() { coins += 500; updateUI(); }
-    function adminResetScores() { localStorage.removeItem('tetrisScores'); updateUI(); }
+    // --- SPIEL LOGIK ---
+    const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
 
-    // --- ENGINE ---
-    function createPiece(t) {
-        if (t === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
-        if (t === 'O') return [[6,6],[6,6]];
-        if (t === 'T') return [[0,5,0],[5,5,5],[0,0,0]];
-        if (t === 'L') return [[0,2,0],[0,2,0],[0,2,2]];
-        return [[3,3,0],[0,3,3],[0,0,0]]; 
+    function createPiece() {
+        const pieces = 'ILJOTSZ';
+        const type = pieces[pieces.length * Math.random() | 0];
+        if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
+        if (type === 'O') return [[6,6],[6,6]];
+        return [[0,5,0],[5,5,5],[0,0,0]];
     }
 
     function pReset() {
-        player.mat = nextPieceMat || createPiece('IOTL'[Math.random()*4|0]);
-        nextPieceMat = createPiece('IOTL'[Math.random()*4|0]);
+        player.mat = createPiece();
         player.pos = {y: 0, x: 4};
-        if (visionPieces > 0) visionPieces--;
         if (collide(arena, player)) {
-            tg.showAlert("Game Over! Score: " + score);
+            tg.showAlert("Game Over!");
             location.reload();
         }
     }
 
     function draw() {
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 12, 20);
-        drawMat(ctx, arena, {x:0, y:0});
-        drawMat(ctx, player.mat, player.pos);
-        
-        nctx.fillStyle = '#000'; nctx.fillRect(0, 0, 4, 4);
-        if (visionPieces > 0) {
-            drawMat(nctx, nextPieceMat, {x:0, y:0});
-            document.getElementById('vision-label').innerText = "VISION";
-            document.getElementById('vision-label').style.color = "#4caf50";
-        } else {
-            document.getElementById('vision-label').innerText = "BLIND";
-            document.getElementById('vision-label').style.color = "#ff4444";
-        }
+        drawMat(arena, {x:0, y:0});
+        drawMat(player.mat, player.pos);
     }
 
-    function drawMat(c, m, o) {
+    function drawMat(m, o) {
         m.forEach((r, y) => r.forEach((v, x) => {
-            if (v !== 0) { c.fillStyle = COLORS[v]; c.fillRect(x + o.x, y + o.y, 1, 1); }
+            if (v !== 0) { ctx.fillStyle = COLORS[v]; ctx.fillRect(x + o.x, y + o.y, 1, 1); }
         }));
     }
 
@@ -237,7 +185,6 @@
         player.pos.y++;
         if (collide(arena, player)) { 
             player.pos.y--; merge(arena, player); pReset(); arenaSweep(); 
-            tg.HapticFeedback.impactOccurred('light');
         }
         dropCount = 0;
     }
@@ -249,26 +196,19 @@
             for (let x = 0; x < arena[y].length; ++x) if (arena[y][x] === 0) continue outer;
             arena.unshift(arena.splice(y, 1)[0].fill(0));
             score += 10;
-            if (score % 50 === 0) { coins += 8; dropInterval *= 0.92; tg.HapticFeedback.notificationOccurred('success'); }
-            if (score % 20 === 0) visionPieces += 10;
+            if (score % 50 === 0) { coins += 8; dropInterval *= 0.9; }
             y++;
         }
-        updateUI();
+        document.getElementById('s-display').innerText = "Punkte: " + score;
+        document.getElementById('c-display').innerText = "💎: " + coins;
     }
 
-    function pMove(d) { 
-        player.pos.x += d; 
-        if (collide(arena, player)) player.pos.x -= d; 
-        else tg.HapticFeedback.impactOccurred('light');
-        draw(); 
-    }
-    
+    function pMove(d) { player.pos.x += d; if (collide(arena, player)) player.pos.x -= d; draw(); }
     function pRotate() { 
         const m = player.mat; 
         for (let y = 0; y < m.length; ++y) for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]];
         m.forEach(r => r.reverse());
         if (collide(arena, player)) m.forEach(r => r.reverse());
-        else tg.HapticFeedback.impactOccurred('medium');
         draw();
     }
 
@@ -280,15 +220,8 @@
         requestAnimationFrame(update);
     }
 
-    function updateUI() {
-        document.getElementById('s').innerText = score;
-        document.getElementById('coin-count').innerText = coins;
-        document.getElementById('menu-coins').innerText = coins;
-        document.getElementById('v-count').innerText = visionPieces;
-        document.getElementById('lvl-display').innerText = Math.floor(score/50)+1;
-    }
-
-    init();
+    // Initialisierung
+    loadUserData();
 </script>
 </body>
 </html>
