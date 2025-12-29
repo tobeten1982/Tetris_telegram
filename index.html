@@ -3,89 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Vision Tetris Pro - Final Stable</title>
+    <title>Vision Tetris Pro - Ultimate Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --tg-btn: #31b545; --danger: #ff4444; --gold: #ffd700; }
+        :root { --tg-btn: #31b545; --danger: #ff4444; --gold: #ffd700; --accent: #00d2ff; }
         body { 
-            background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; 
+            background: radial-gradient(circle at center, #1a2a3a, #000); 
+            color: #fff; font-family: 'Segoe UI', sans-serif; 
             margin: 0; padding: 0; height: 100vh; overflow: hidden;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* OVERLAY SYSTEM */
+        /* OVERLAYS (Stil aus dem alten Skript, Logik aus dem neuen) */
         .full-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.98);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.92);
             z-index: 10000; display: flex; justify-content: center; align-items: center;
             backdrop-filter: blur(10px);
         }
         .menu-card {
-            background: #fff; color: #222; padding: 25px; border-radius: 24px;
-            width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #ffffff; color: #222; padding: 25px; border-radius: 24px;
+            width: 85%; max-width: 320px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
 
         .hidden { display: none !important; }
-        .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: bold; margin: 8px 0; cursor: pointer; font-size: 1em; }
+        .btn-main { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; margin: 8px 0; cursor: pointer; font-size: 1em; }
         .btn-green { background: var(--tg-btn); color: white; }
-        .btn-outline { background: #f2f2f2; color: #333; }
+        .btn-outline { background: #f0f0f0; color: #444; }
 
         /* GAME UI */
-        canvas { border: 4px solid #333; background: #000; border-radius: 15px; margin-top: 10px; }
-        .stats { display: flex; gap: 20px; margin-top: 15px; font-size: 1.1em; font-weight: bold; color: var(--gold); }
+        .header-box { margin-top: 15px; display: flex; gap: 8px; background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 20px; font-size: 0.8em; }
+        .stat-item { background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        #game-container { position: relative; margin-top: 10px; }
+        #t { border: 4px solid #333; border-radius: 15px; background: #000; }
+        
+        /* VISION BOX */
+        #vision-box {
+            position: absolute; top: 0; right: -60px;
+            background: rgba(0,0,0,0.7); border: 2px solid #444;
+            padding: 5px; border-radius: 10px; text-align: center;
+        }
+        #vision-canvas { background: #000; }
+
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; }
-        .game-btn { background: #1a1a1a; color: white; border: 1px solid #333; height: 65px; border-radius: 18px; font-size: 26px; touch-action: manipulation; }
-        .quit-btn { background: var(--danger); color: white; grid-column: span 3; padding: 16px; border-radius: 18px; font-weight: bold; border: none; margin-top: 5px; }
+        .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; }
+        .quit-btn { background: var(--danger); color: white; grid-column: span 3; padding: 16px; border-radius: 15px; font-weight: bold; border: none; }
     </style>
 </head>
 <body>
 
     <div id="admin-panel" class="full-overlay hidden">
-        <div class="menu-card" style="border: 4px solid var(--danger);">
-            <h2 style="color:var(--danger); margin-top:0;">🛠 ADMIN KONSOLE</h2>
-            <p>Admin-ID: 1126176265</p>
-            <button class="btn-main btn-green" onclick="addAdminTokens()">+500 💎 Token</button>
-            <button class="btn-main" style="background:#444; color:white;" onclick="closeAdmin()">Schließen</button>
+        <div class="menu-card" style="border: 3px solid var(--danger);">
+            <h2 style="color:var(--danger)">🛠 Admin Panel</h2>
+            <p>ID: 1126176265</p>
+            <button class="btn-main btn-green" onclick="adminAddTokens()">+500 💎</button>
+            <button class="btn-main" onclick="closeOverlay('admin-panel')">Schließen</button>
         </div>
     </div>
 
     <div id="rules-overlay" class="full-overlay hidden">
         <div class="menu-card">
-            <h2 style="margin-top:0;">📜 Deine Boni</h2>
-            <p style="text-align:left; font-size:0.95em; line-height:1.6;">
-                • <b>Level Up:</b> Alle 50 Pkt (+8 💎)<br>
-                • <b>Tempo:</b> Steigt mit jedem Level!<br>
-                • <b>Vision:</b> Alle 20 Pkt (+10 Sicht)<br>
-                <br>
-                <span style="color:var(--danger); font-weight:bold;">ACHTUNG:</span> Nur der rote Button speichert deine 💎 dauerhaft!
+            <h2>📜 Regeln & Boni</h2>
+            <p style="text-align:left; font-size:0.9em; line-height:1.5;">
+                • <b>Level Up:</b> 50 Pkt (+8 💎)<br>
+                • <b>Vision:</b> 20 Pkt (+10 Sicht)<br>
+                • <b>Wunschstein:</b> Im Shop (4 💎)<br>
+                • <b>Speichern:</b> Nur über den roten Button!
             </p>
-            <button class="btn-main btn-green" onclick="toggleRules(false)">ALLES KLAR!</button>
+            <button class="btn-main btn-green" onclick="closeOverlay('rules-overlay')">VERSTANDEN</button>
         </div>
     </div>
 
     <div id="menu-overlay" class="full-overlay">
         <div class="menu-card">
-            <h2 id="player-name-display" style="cursor:pointer; margin-bottom:5px;">Lade Profil...</h2>
-            <p style="margin-top:0;">Guthaben: <span id="menu-coins" style="font-weight:bold; color:#e67e22;">0</span> 💎</p>
-            
+            <h2 id="player-name-display" style="cursor:pointer">Lade...</h2>
+            <div style="margin-bottom:15px;">Guthaben: <span id="menu-coins" style="color:#e67e22; font-weight:bold;">0</span> 💎</div>
             <select id="speed-select" class="btn-main btn-outline">
-                <option value="850">Modus: Easy</option>
-                <option value="600" selected>Modus: Normal</option>
-                <option value="350">Modus: Hard</option>
-                <option value="150">Modus: Visionary 🔥</option>
+                <option value="850">Easy</option>
+                <option value="600" selected>Normal</option>
+                <option value="350">Hard</option>
+                <option value="150">Visionary 🔥</option>
             </select>
-
             <button class="btn-main btn-green" onclick="startGame()">SPIEL STARTEN</button>
-            <button class="btn-main btn-outline" onclick="toggleRules(true)">BONI ANSEHEN</button>
+            <button class="btn-main btn-outline" onclick="openRules()">ANLEITUNG</button>
         </div>
     </div>
 
-    <div class="stats">
-        <span>LV <span id="lvl-ui">1</span></span>
-        <span>PKT: <span id="score-ui">0</span></span>
-        <span>💎: <span id="coin-ui">0</span></span>
+    <div class="header-box">
+        <div class="stat-item">LV: <span id="lvl-ui">1</span></div>
+        <div class="stat-item">PKT: <span id="score-ui">0</span></div>
+        <div class="stat-item">VIS: <span id="vis-ui">0</span></div>
+        <div class="stat-item">💎: <span id="coin-ui">0</span></div>
     </div>
 
-    <canvas id="t" width="240" height="400"></canvas>
+    <div id="game-container">
+        <canvas id="t" width="240" height="400"></canvas>
+        <div id="vision-box">
+            <div style="font-size:8px; color:var(--accent); font-weight:bold;">NEXT</div>
+            <canvas id="vision-canvas" width="40" height="40"></canvas>
+        </div>
+    </div>
 
     <div class="controls">
         <button class="game-btn" onclick="pRotate()">↻</button>
@@ -99,75 +116,39 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    tg.ready(); tg.expand();
 
-    const canvas = document.getElementById('t');
-    const ctx = canvas.getContext('2d');
-    ctx.scale(20, 20);
+    const canvas = document.getElementById('t'), ctx = canvas.getContext('2d');
+    const vCanvas = document.getElementById('vision-canvas'), vCtx = vCanvas.getContext('2d');
+    ctx.scale(20, 20); vCtx.scale(10, 10);
 
-    let score = 0, coins = 0, paused = true, dropInterval = 600;
-    let lastLevelAwarded = 0;
+    let score = 0, coins = 0, vision = 0, paused = true, dropInterval = 600;
+    let lastLevelAwarded = 0, lastVisionAwarded = 0;
     let arena = Array.from({length: 20}, () => new Array(12).fill(0));
     let player = { pos: {x: 0, y: 0}, mat: null };
-    let lastTime = 0, dropCount = 0;
+    let nextPiece = null, lastTime = 0, dropCount = 0;
 
-    // --- USER-DATEN FIX ---
-    function fetchUserData() {
-        const user = tg.initDataUnsafe.user;
-        if (user && user.first_name) {
-            document.getElementById('player-name-display').innerText = user.first_name;
-        } else {
-            document.getElementById('player-name-display').innerText = "Spieler";
-        }
-        const params = new URLSearchParams(window.location.search);
-        coins = parseInt(params.get('tokens')) || 0;
+    // --- INITIALISIERUNG ---
+    function fetchUser() {
+        const u = tg.initDataUnsafe.user;
+        document.getElementById('player-name-display').innerText = u ? u.first_name : "Spieler";
+        const p = new URLSearchParams(window.location.search);
+        coins = parseInt(p.get('tokens')) || 0;
         updateUI();
     }
-    // Polling falls Telegram langsam lädt
-    const nameCheck = setInterval(() => {
-        if(!document.getElementById('player-name-display').innerText.includes("Lade")) clearInterval(nameCheck);
-        fetchUserData();
-    }, 500);
+    setInterval(() => { if(document.getElementById('player-name-display').innerText === "Lade...") fetchUser(); }, 500);
 
-    // --- ADMIN FUNKTION ---
+    // --- ADMIN ---
     let adminClicks = 0;
     document.getElementById('player-name-display').onclick = () => {
         adminClicks++;
-        if (adminClicks >= 3) {
-            document.getElementById('admin-panel').classList.remove('hidden');
-            adminClicks = 0;
-        }
+        if (adminClicks >= 3) { document.getElementById('admin-panel').classList.remove('hidden'); adminClicks = 0; }
     };
-    function addAdminTokens() { 
-        coins += 500; 
-        updateUI(); 
-        tg.HapticFeedback.notificationOccurred('success'); 
-    }
-    function closeAdmin() { document.getElementById('admin-panel').classList.add('hidden'); }
+    function adminAddTokens() { coins += 500; updateUI(); tg.HapticFeedback.notificationOccurred('success'); }
+    function closeOverlay(id) { document.getElementById(id).classList.add('hidden'); }
+    function openRules() { document.getElementById('rules-overlay').classList.remove('hidden'); }
 
-    // --- NAVIGATION ---
-    function toggleRules(show) {
-        document.getElementById('rules-overlay').classList.toggle('hidden', !show);
-        document.getElementById('menu-overlay').classList.toggle('hidden', show);
-    }
-
-    function startGame() {
-        document.getElementById('menu-overlay').classList.add('hidden');
-        document.getElementById('rules-overlay').classList.add('hidden');
-        dropInterval = parseInt(document.getElementById('speed-select').value);
-        paused = false;
-        pReset();
-        update();
-    }
-
-    function quitAndSave() {
-        tg.HapticFeedback.notificationOccurred('warning');
-        tg.sendData(JSON.stringify({action: "sync_tokens", amount: coins}));
-        setTimeout(() => tg.close(), 200);
-    }
-
-    // --- TETRIS LOGIK ---
+    // --- GAME ENGINE ---
     const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
     function createPiece() {
         const p = 'ILJOTSZ'[Math.random()*7|0];
@@ -178,12 +159,44 @@
     }
 
     function pReset() {
-        player.mat = createPiece();
+        player.mat = nextPiece || createPiece();
+        nextPiece = createPiece();
         player.pos = {y: 0, x: 4};
-        if (collide(arena, player)) {
-            tg.showAlert("Game Over! Score: " + score);
-            location.reload();
+        if (vision > 0) vision--;
+        if (collide(arena, player)) { tg.showAlert("Game Over!"); location.reload(); }
+        updateUI();
+    }
+
+    function arenaSweep() {
+        let rows = 0;
+        outer: for (let y = arena.length - 1; y > 0; --y) {
+            for (let x = 0; x < arena[y].length; ++x) if (arena[y][x] === 0) continue outer;
+            arena.unshift(arena.splice(y, 1)[0].fill(0));
+            rows++; y++;
         }
+        if (rows > 0) {
+            score += rows * 10;
+            // Boni Check
+            if (Math.floor(score/50) > lastLevelAwarded) { coins += 8; dropInterval *= 0.92; lastLevelAwarded = Math.floor(score/50); tg.HapticFeedback.notificationOccurred('success'); }
+            if (Math.floor(score/20) > lastVisionAwarded) { vision += 10; lastVisionAwarded = Math.floor(score/20); }
+        }
+        updateUI();
+    }
+
+    function draw() {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 12, 20);
+        drawMat(ctx, arena, {x:0, y:0});
+        drawMat(ctx, player.mat, player.pos);
+
+        // Vision Draw
+        vCtx.fillStyle = '#000'; vCtx.fillRect(0, 0, 4, 4);
+        if (vision > 0 && nextPiece) {
+            drawMat(vCtx, nextPiece, {x:0, y:0});
+        }
+    }
+
+    function drawMat(c, m, o) {
+        m.forEach((r, y) => r.forEach((v, x) => { if (v) { c.fillStyle = COLORS[v]; c.fillRect(x+o.x, y+o.y, 1, 1); }}));
     }
 
     function collide(a, p) {
@@ -193,74 +206,35 @@
         return false;
     }
 
-    function merge(a, p) {
-        p.mat.forEach((r, y) => r.forEach((v, x) => {
-            if (v !== 0) a[y + p.pos.y][x + p.pos.x] = v;
-        }));
-    }
-
-    function arenaSweep() {
-        let rows = 0;
-        outer: for (let y = arena.length - 1; y > 0; --y) {
-            for (let x = 0; x < arena[y].length; ++x) if (arena[y][x] === 0) continue outer;
-            arena.unshift(arena.splice(y, 1)[0].fill(0));
-            rows++;
-            y++;
-        }
-        if (rows > 0) {
-            score += rows * 10;
-            checkLevelBonus();
-        }
-        updateUI();
-    }
-
-    function checkLevelBonus() {
-        let currentLevel = Math.floor(score / 50);
-        if (currentLevel > lastLevelAwarded) {
-            coins += 8;
-            dropInterval *= 0.92;
-            lastLevelAwarded = currentLevel;
-            tg.HapticFeedback.notificationOccurred('success');
-        }
-    }
-
     function pDrop() {
         player.pos.y++;
-        if (collide(arena, player)) {
-            player.pos.y--;
-            merge(arena, player);
-            pReset();
-            arenaSweep();
-        }
+        if (collide(arena, player)) { player.pos.y--; merge(arena, player); pReset(); arenaSweep(); }
         dropCount = 0;
     }
 
-    function pMove(d) {
-        player.pos.x += d;
-        if (collide(arena, player)) player.pos.x -= d;
-        draw();
-    }
-
-    function pRotate() {
-        const m = player.mat;
-        for (let y = 0; y < m.length; ++y) for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]];
-        m.forEach(r => r.reverse());
-        if (collide(arena, player)) m.forEach(r => r.reverse());
-        draw();
+    function merge(a, p) { p.mat.forEach((r, y) => r.forEach((v, x) => { if (v !== 0) a[y+p.pos.y][x+p.pos.x] = v; })); }
+    function pMove(d) { player.pos.x += d; if (collide(arena, player)) player.pos.x -= d; draw(); }
+    function pRotate() { 
+        const m = player.mat; for (let y = 0; y < m.length; ++y) for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]];
+        m.forEach(r => r.reverse()); if (collide(arena, player)) m.forEach(r => r.reverse()); draw();
     }
 
     function update(time = 0) {
         if (paused) return;
         const dt = time - lastTime; lastTime = time; dropCount += dt;
         if (dropCount > dropInterval) pDrop();
-        draw();
-        requestAnimationFrame(update);
+        draw(); requestAnimationFrame(update);
     }
 
-    function draw() {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 12, 20);
-        arena.forEach((r, y) => r.forEach((v, x) => { if(v) { ctx.fillStyle = COLORS[v]; ctx.fillRect(x,y,1,1); }}));
-        if(player.mat) player.mat.forEach((r, y) => r.forEach((v, x) => { if(v) { ctx.fillStyle = COLORS[v]; ctx.fillRect(x+player.pos.x, y+player.pos.y, 1,1); }}));
+    function startGame() {
+        document.getElementById('menu-overlay').classList.add('hidden');
+        dropInterval = parseInt(document.getElementById('speed-select').value);
+        paused = false; pReset(); update();
+    }
+
+    function quitAndSave() {
+        tg.sendData(JSON.stringify({action: "sync_tokens", amount: coins}));
+        tg.close();
     }
 
     function updateUI() {
@@ -268,9 +242,10 @@
         document.getElementById('coin-ui').innerText = coins;
         document.getElementById('menu-coins').innerText = coins;
         document.getElementById('lvl-ui').innerText = Math.floor(score/50)+1;
+        document.getElementById('vis-ui').innerText = vision;
     }
 
-    fetchUserData();
+    fetchUser();
 </script>
 </body>
 </html>
