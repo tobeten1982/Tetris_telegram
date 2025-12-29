@@ -14,9 +14,9 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* OVERLAYS (Stil aus dem alten Skript, Logik aus dem neuen) */
+        /* OVERLAYS */
         .full-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 10000; display: flex; justify-content: center; align-items: center;
             backdrop-filter: blur(10px);
         }
@@ -46,18 +46,19 @@
         #vision-canvas { background: #000; }
 
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; }
-        .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; }
+        .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
         .quit-btn { background: var(--danger); color: white; grid-column: span 3; padding: 16px; border-radius: 15px; font-weight: bold; border: none; }
     </style>
 </head>
 <body>
 
-    <div id="admin-panel" class="full-overlay hidden">
-        <div class="menu-card" style="border: 3px solid var(--danger);">
+    <div id="admin-panel" class="full-overlay hidden" style="z-index: 20000;">
+        <div class="menu-card" style="border: 4px solid var(--danger);">
             <h2 style="color:var(--danger)">🛠 Admin Panel</h2>
-            <p>ID: 1126176265</p>
-            <button class="btn-main btn-green" onclick="adminAddTokens()">+500 💎</button>
-            <button class="btn-main" onclick="closeOverlay('admin-panel')">Schließen</button>
+            <p>Admin-ID: 1126176265</p>
+            <button class="btn-main btn-green" onclick="adminAddTokens()">+500 💎 TOKEN</button>
+            <button class="btn-main" style="background:#444; color:#fff;" onclick="score += 50; checkBonuses(); updateUI();">LEVEL +1 (TEST)</button>
+            <button class="btn-main btn-outline" onclick="closeOverlay('admin-panel')">Schließen</button>
         </div>
     </div>
 
@@ -67,7 +68,7 @@
             <p style="text-align:left; font-size:0.9em; line-height:1.5;">
                 • <b>Level Up:</b> 50 Pkt (+8 💎)<br>
                 • <b>Vision:</b> 20 Pkt (+10 Sicht)<br>
-                • <b>Wunschstein:</b> Im Shop (4 💎)<br>
+                • <b>Next-View:</b> Kostet 1 Sicht-Punkt pro Stein<br>
                 • <b>Speichern:</b> Nur über den roten Button!
             </p>
             <button class="btn-main btn-green" onclick="closeOverlay('rules-overlay')">VERSTANDEN</button>
@@ -76,8 +77,11 @@
 
     <div id="menu-overlay" class="full-overlay">
         <div class="menu-card">
-            <h2 id="player-name-display" style="cursor:pointer">Lade...</h2>
-            <div style="margin-bottom:15px;">Guthaben: <span id="menu-coins" style="color:#e67e22; font-weight:bold;">0</span> 💎</div>
+            <div onclick="triggerAdmin()" style="cursor:pointer; padding: 10px;">
+                <h2 id="player-name-display" style="margin:0;">Lade Profil...</h2>
+                <div style="font-size: 0.6em; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Admin Area</div>
+            </div>
+            <div style="margin:15px 0; font-size: 1.2em;">Guthaben: <span id="menu-coins" style="color:#e67e22; font-weight:bold;">0</span> 💎</div>
             <select id="speed-select" class="btn-main btn-outline">
                 <option value="850">Easy</option>
                 <option value="600" selected>Normal</option>
@@ -85,7 +89,7 @@
                 <option value="150">Visionary 🔥</option>
             </select>
             <button class="btn-main btn-green" onclick="startGame()">SPIEL STARTEN</button>
-            <button class="btn-main btn-outline" onclick="openRules()">ANLEITUNG</button>
+            <button class="btn-main btn-outline" onclick="openRules()">BONI & REGELN</button>
         </div>
     </div>
 
@@ -128,7 +132,24 @@
     let player = { pos: {x: 0, y: 0}, mat: null };
     let nextPiece = null, lastTime = 0, dropCount = 0;
 
-    // --- INITIALISIERUNG ---
+    // --- ADMIN LOGIK (FIXED) ---
+    let adminClicks = 0, lastClickTime = 0;
+    function triggerAdmin() {
+        const now = Date.now();
+        if (now - lastClickTime > 2000) adminClicks = 0;
+        adminClicks++;
+        lastClickTime = now;
+        if (adminClicks >= 3) {
+            document.getElementById('admin-panel').classList.remove('hidden');
+            tg.HapticFeedback.impactOccurred('heavy');
+            adminClicks = 0;
+        }
+    }
+    function adminAddTokens() { coins += 500; updateUI(); tg.HapticFeedback.notificationOccurred('success'); }
+    function closeOverlay(id) { document.getElementById(id).classList.add('hidden'); }
+    function openRules() { document.getElementById('rules-overlay').classList.remove('hidden'); }
+
+    // --- DATA ---
     function fetchUser() {
         const u = tg.initDataUnsafe.user;
         document.getElementById('player-name-display').innerText = u ? u.first_name : "Spieler";
@@ -136,17 +157,10 @@
         coins = parseInt(p.get('tokens')) || 0;
         updateUI();
     }
-    setInterval(() => { if(document.getElementById('player-name-display').innerText === "Lade...") fetchUser(); }, 500);
-
-    // --- ADMIN ---
-    let adminClicks = 0;
-    document.getElementById('player-name-display').onclick = () => {
-        adminClicks++;
-        if (adminClicks >= 3) { document.getElementById('admin-panel').classList.remove('hidden'); adminClicks = 0; }
-    };
-    function adminAddTokens() { coins += 500; updateUI(); tg.HapticFeedback.notificationOccurred('success'); }
-    function closeOverlay(id) { document.getElementById(id).classList.add('hidden'); }
-    function openRules() { document.getElementById('rules-overlay').classList.remove('hidden'); }
+    const checkInit = setInterval(() => {
+        if(document.getElementById('player-name-display').innerText !== "Lade Profil...") clearInterval(checkInit);
+        fetchUser();
+    }, 500);
 
     // --- GAME ENGINE ---
     const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
@@ -155,6 +169,7 @@
         if (p === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if (p === 'O') return [[6,6],[6,6]];
         if (p === 'T') return [[0,4,0],[4,4,4],[0,0,0]];
+        if (p === 'L') return [[0,5,0],[0,5,0],[0,5,5]];
         return [[2,2,0],[0,2,2],[0,0,0]];
     }
 
@@ -163,7 +178,10 @@
         nextPiece = createPiece();
         player.pos = {y: 0, x: 4};
         if (vision > 0) vision--;
-        if (collide(arena, player)) { tg.showAlert("Game Over!"); location.reload(); }
+        if (collide(arena, player)) {
+            tg.showAlert("Game Over! Score: " + score);
+            location.reload();
+        }
         updateUI();
     }
 
@@ -176,23 +194,29 @@
         }
         if (rows > 0) {
             score += rows * 10;
-            // Boni Check
-            if (Math.floor(score/50) > lastLevelAwarded) { coins += 8; dropInterval *= 0.92; lastLevelAwarded = Math.floor(score/50); tg.HapticFeedback.notificationOccurred('success'); }
-            if (Math.floor(score/20) > lastVisionAwarded) { vision += 10; lastVisionAwarded = Math.floor(score/20); }
+            checkBonuses();
         }
         updateUI();
+    }
+
+    function checkBonuses() {
+        let curLvl = Math.floor(score / 50);
+        if (curLvl > lastLevelAwarded) {
+            coins += 8; dropInterval *= 0.92; lastLevelAwarded = curLvl;
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        let curVis = Math.floor(score / 20);
+        if (curVis > lastVisionAwarded) {
+            vision += 10; lastVisionAwarded = curVis;
+        }
     }
 
     function draw() {
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 12, 20);
         drawMat(ctx, arena, {x:0, y:0});
         drawMat(ctx, player.mat, player.pos);
-
-        // Vision Draw
         vCtx.fillStyle = '#000'; vCtx.fillRect(0, 0, 4, 4);
-        if (vision > 0 && nextPiece) {
-            drawMat(vCtx, nextPiece, {x:0, y:0});
-        }
+        if (vision > 0 && nextPiece) drawMat(vCtx, nextPiece, {x:0, y:0});
     }
 
     function drawMat(c, m, o) {
