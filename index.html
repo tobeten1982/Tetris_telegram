@@ -61,6 +61,7 @@
         .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; width: 100%; max-width: 400px; margin-top: auto; }
         .game-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); height: 60px; font-size: 26px; border-radius: 18px; touch-action: manipulation; }
         .coin-btn { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; border: none; padding: 10px 20px; border-radius: 15px; font-weight: bold; margin-top: 8px; cursor: pointer; z-index: 20; position: relative; }
+        .quit-btn { background: var(--danger); color: white; grid-column: span 3; padding: 16px; border-radius: 15px; font-weight: bold; border: none; margin-top: 5px; cursor: pointer; }
 
         .piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
         .p-btn { background: #222; border: 2px solid #444; border-radius: 10px; padding: 8px; cursor: pointer; color: white; font-weight: bold; }
@@ -92,6 +93,7 @@
             <h2 style="margin-top:0;">📜 Spielregeln</h2>
             <div style="text-align: left; font-size: 0.85em; background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px; line-height: 1.4;">
                 • <b>Level-Up:</b> Alle 50 Pkt. (+8 Münzen)<br>
+                • <b>100 Pkt Bonus:</b> Einmalig <b>+10 Münzen</b>!<br>
                 • <b>Shop:</b> Wunschsteine kosten 4 💰.<br>
                 • <b>Vision:</b> Alle 20 Pkt. +10 Visionen.<br>
                 • <b>Reihen-Bonus:</b> 4 Reihen = <b>+4 Münzen</b> 💰!
@@ -158,6 +160,7 @@
         <button class="game-btn" onclick="pMove(-1)">←</button>
         <button class="game-btn" onclick="location.reload()">🏠</button>
         <button class="game-btn" onclick="pMove(1)">→</button>
+        <button class="quit-btn" onclick="quitAndSave()">💾 SPEICHERN & BEENDEN</button>
     </div>
 
 <script>
@@ -173,10 +176,18 @@
 
     let arena = createMat(12, 20), player = { pos: {x: 0, y: 0}, mat: null };
     let nextPieceMat = null, score = 0, visionPieces = 0, lastVisionMilestone = 0, lastLevelMilestone = 1;
+    let hundredPointBonusAwarded = false; // Bonus-Flag
     let paused = true, dropInterval = 600, dropCount = 0, lastTime = 0, rAF = null;
-    let coins = parseInt(localStorage.getItem('tetrisCoins')) || 0;
+    let coins = 0;
     let customQueue = [];
     let personalBest = 0, hsNotified = false;
+
+    // --- BEENDEN & SPEICHERN ---
+    function quitAndSave() {
+        tg.HapticFeedback.notificationOccurred('warning');
+        tg.sendData(JSON.stringify({action: "sync_tokens", amount: coins}));
+        setTimeout(() => tg.close(), 200);
+    }
 
     // --- ADMIN LOGIK ---
     let adminClicks = 0, adminTimer;
@@ -213,7 +224,8 @@
         setTimeout(() => t.classList.remove('show-anim'), 2500);
     }
 
-    function updateDifficulty() {
+    function checkBonuses() {
+        // Level Up Logik
         const curLvl = Math.floor(score / 50) + 1;
         if (curLvl > lastLevelMilestone) {
             lastLevelMilestone = curLvl;
@@ -223,6 +235,16 @@
             showToast('level-up-toast');
             tg.HapticFeedback.notificationOccurred('success');
         }
+
+        // 100 Punkte Spezial Bonus
+        if (score >= 100 && !hundredPointBonusAwarded) {
+            hundredPointBonusAwarded = true;
+            coins += 10;
+            saveCoins();
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.showAlert("Glückwunsch! 100 Punkte erreicht: +10 Tetris Token!");
+        }
+        
         document.getElementById('lvl-display').innerText = curLvl;
         updateUI();
     }
@@ -245,13 +267,10 @@
 
     function draw() {
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
-        const curLvl = Math.floor(score / 50) + 1;
-        ctx.shadowBlur = (curLvl >= 2) ? Math.min(15, curLvl * 2) : 0;
-        ctx.shadowColor = "white";
         drawMat(ctx, arena, {x:0, y:0});
         drawMat(ctx, player.mat, player.pos);
         
-        nctx.shadowBlur = 0; nctx.fillStyle = '#000'; nctx.fillRect(0, 0, 40, 40);
+        nctx.fillStyle = '#000'; nctx.fillRect(0, 0, 40, 40);
         const isCustom = (customQueue.length > 0);
         if (visionPieces > 0 || isCustom) {
             const pMat = isCustom ? createPiece(customQueue[0]) : nextPieceMat;
@@ -314,7 +333,7 @@
             if (rows === 4) { coins += 4; tg.HapticFeedback.notificationOccurred('warning'); }
             if (score > personalBest && personalBest > 0 && !hsNotified) { hsNotified = true; showToast('highscore-toast'); }
             if (Math.floor(score / 20) > lastVisionMilestone) { lastVisionMilestone = Math.floor(score/20); visionPieces += 10; }
-            updateDifficulty();
+            checkBonuses();
         }
     }
 
@@ -333,15 +352,19 @@
             updateShopInventory(); updateUI();
         } else { tg.showAlert("Nicht genug Münzen!"); }
     }
+
     function updateShopInventory() {
         const inv = document.getElementById('shop-inventory');
         inv.innerHTML = customQueue.map(t => `<span style="background:${PIECE_COLORS[t]}; width:12px; height:12px; border-radius:2px; display:inline-block; margin:0 2px;"></span>`).join('');
     }
+
     function openShop() { paused = true; cancelAnimationFrame(rAF); document.getElementById('shop-overlay').style.display = 'flex'; updateShopInventory(); }
     function closeShop() { document.getElementById('shop-overlay').style.display = 'none'; paused = false; lastTime = performance.now(); update(); }
     function toggleRules(s) { document.getElementById('rules-overlay').style.display = s?'flex':'none'; }
+    
     function startGame() { 
-        dropInterval = parseInt(document.getElementById('speed-select').value); 
+        const speedVal = document.getElementById('speed-select').value;
+        dropInterval = parseInt(speedVal); 
         document.getElementById('menu-overlay').classList.add('hidden'); 
         paused = false; lastTime = performance.now(); pReset(); update(); 
     }
@@ -352,17 +375,23 @@
         scs.sort((a,b) => b.score - a.score);
         localStorage.setItem('tetrisScores', JSON.stringify(scs.slice(0,5)));
     }
+
     function loadLocalScores() {
         const scs = JSON.parse(localStorage.getItem('tetrisScores')) || [];
         personalBest = scs.length > 0 ? scs[0].score : 0;
         document.getElementById('menu-hs-list').innerHTML = scs.map(s => `<li>${s.date} <span>${s.score} Pkt</span></li>`).join('');
     }
+
     function saveCoins() { localStorage.setItem('tetrisCoins', coins); }
 
     (function init() {
-        updateUI();
+        // Init User Data
+        const params = new URLSearchParams(window.location.search);
+        coins = parseInt(params.get('tokens')) || parseInt(localStorage.getItem('tetrisCoins')) || 0;
+        
         document.getElementById('player-name-display').innerText = (tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Gast");
         loadLocalScores();
+        updateUI();
     })();
 </script>
 </body>
