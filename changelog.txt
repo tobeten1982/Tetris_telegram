@@ -1,80 +1,79 @@
 ==================================================
-PROJECT: TETRIS Extreme - TELEGRAM STAR EDITION
+CHANGELOG: VISION TETRIS PRO
+Version: 1.0 (Basis-Release)
+Status: Stabil / Spielbereit
 ==================================================
 
---------------------------------------------------
-TEIL 1: DAS FRONTEND (index.html)
---------------------------------------------------
-Kopiere diesen Code in deine HTML-Datei. Er enthält:
-- Level-Up: 50 Pkt (+8 Münzen)
-- Tetris-Bonus: 4 Reihen (+4 Münzen)
-- Vision-System & Shop
-- Signal-Übertragung für das Freispiel (Score >= 100)
+VORHANDENE FUNKTIONEN IM SPIEL:
 
-[Hier den HTML-Code von oben einfügen - gekürzt für die Übersicht]
-... (Der HTML-Code enthält die Funktion finalizeGame(score) am Ende) ...
+1. CORE GAMEPLAY (TETRIS ENGINE)
+   - Klassisches Grid-System (12x20 Felder).
+   - Flüssige Steuerung für Rotation, Links/Rechts-Bewegung und Soft-Drop.
+   - Steigerung der Fallgeschwindigkeit bei Level-Up.
 
---------------------------------------------------
-TEIL 2: DAS BACKEND (bot.py)
---------------------------------------------------
-Dieses Skript steuert die Telegram Stars und das Freispiel-System.
-Benötigt: pip install python-telegram-bot
+2. BELOHNUNGS- & LEVEL-SYSTEM
+   - Level-Up-Logik: Alle 50 Punkte steigt das Level.
+   - Level-Belohnung: +8 Münzen (Coins) pro Level-Aufstieg.
+   - Tetris-Reihenbonus: Beim gleichzeitigen Löschen von 4 Reihen
+     erhält der Spieler einen Sofort-Bonus von +4 Münzen.
+   - Visuelle "Toast"-Benachrichtigungen bei Rekorden und Level-Ups.
 
-import json
-from telegram import LabeledPrice, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, PreCheckoutQueryHandler, MessageHandler, filters, ContextTypes
+3. VISION-SYSTEM (VORSCHAU-LOGIK)
+   - "Blind"-Modus: Die Vorschau auf den nächsten Stein ist anfangs gesperrt.
+   - Vision-Guthaben: Alle 20 Punkte erhält der Spieler +10 Visionen.
+   - Dynamische Anzeige: Umschalten zwischen "BLIND" und "VISION" (Vorschau).
 
-TOKEN = "DEIN_BOT_TOKEN_HIER"
-user_credits = {}
+4. WUNSCHSTEIN-SHOP
+   - Interaktives Shop-Overlay während des Spiels.
+   - Kauf-Funktion: Jeder beliebige Stein (I, O, T, L, J, S, Z) kann für
+     4 Münzen gezielt erworben werden.
+   - Inventar-Warteschlange: Gekaufte Steine werden oben in einer Liste 
+     angezeigt und als nächstes im Spiel ausgegeben.
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    if uid not in user_credits: user_credits[uid] = 0
-    
-    text = f"Willkommen! Guthaben: {user_credits[uid]} Freispiele."
-    kb = [[InlineKeyboardButton("Spielen (10 Sterne)", callback_data="buy")]] if user_credits[uid] <= 0 else [[InlineKeyboardButton("Freispiel nutzen", callback_data="play")]]
-    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb))
+5. SCORE- & DATENVERWALTUNG
+   - Highscore-Liste: Speicherung der Top 5 Scores inklusive Datum (lokal).
+   - Münzspeicherung: Guthaben bleibt über den LocalStorage erhalten.
+   - WebbApp-Integration: Automatisches Auslesen des Telegram-Namens.
 
-async def precheckout(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.pre_checkout_query.answer(ok=True)
+6. ADMIN-PANEL (VERSTECKT)
+   - Zugriffsschutz durch 3-Klick-Trigger und Passwortabfrage.
+   - Cheat-Funktion: +500 Münzen hinzufügen.
+   - Reset-Funktionen: Münzstand und Highscore-Listen löschen.
 
-async def success_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    user_credits[uid] += 1
-    await update.message.reply_text("Zahlung erhalten! 1 Runde gutgeschrieben.")
+7. USER INTERFACE (UI) & FEEDBACK
+   - Haptisches Feedback: Vibrationen bei wichtigen Ereignissen (via Telegram).
+   - Adaptive UI: Status-Anzeigen für Level, Punkte, Visionen und Münzen.
+   - Anleitung: Integriertes Regelwerk-Overlay im Hauptmenü.
 
-async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Empfängt Daten vom Spiel (Score >= 100)
-    data = json.loads(update.effective_message.web_app_data.data)
-    uid = update.effective_user.id
-    if data.get("status") == "winner":
-        user_credits[uid] += 1
-        await update.message.reply_text("🏆 Über 100 Punkte! Du hast ein Freispiel erhalten!")
-
-def main():
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(PreCheckoutQueryHandler(precheckout))
-    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, success_payment))
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
-    app.run_polling()
-
-if __name__ == "__main__": main()
-
---------------------------------------------------
-TEIL 3: ANLEITUNG & SETUP
---------------------------------------------------
-1. Bot-Setup:
-   - @BotFather -> /mybots -> Payments -> Telegram Stars aktivieren.
-   - Web App URL im BotFather hinterlegen.
-
-2. Handy-Installation (Android/Termux):
-   - pkg install python
-   - pip install python-telegram-bot
-   - python bot.py
-
-3. Belohnungs-Logik:
-   - User zahlt 10 Sterne -> Credit +1.
-   - User spielt Runde -> Credit -1.
-   - User erreicht 100+ Pkt -> Credit +1 (Freispiel).
 ==================================================
+
+
+
+ v1.0 - Das Sterne-Update 🚀
+---------------------------------------
+AKTUELL VERFÜGBARE FUNKTIONEN:
+
+✅ INTERNES GUTHABEN-SYSTEM
+   - Startguthaben von 50 Sternen für jeden neuen Spieler.
+   - Automatisches Speichern der Spielstände in 'users.json'.
+   - Guthaben bleibt auch bei Bot-Neustart erhalten.
+
+✅ SPIEL-INTEGRATION (WEB APP)
+   - Direkter Zugriff auf Tetris Extreme über den Menü-Button.
+   - Kosten pro Spielrunde: 10 Sterne.
+   - Bonus-System: Erhalte 10 Sterne zurück bei einem Score >= 100.
+
+✅ GAMEPLAY-VORSCHAU
+   - Neuer Button zur Anzeige einer visuellen Spiel-Vorschau.
+   - Bilder/GIFs werden direkt von GitHub geladen.
+
+✅ KOMFORT-FUNKTIONEN
+   - '💰 Mein Guthaben': Schnelle Abfrage des Kontostands.
+   - '📜 Spielregeln': Kompakte Übersicht der Spielmechanik.
+   - '🆙 Changelog': Ruft diese Versionsliste live von GitHub ab.
+
+✅ TECHNISCHE BASIS
+   - Wechsel von externen Zahlungsanbietern auf internes Punktesystem.
+   - Stabiler Speicher-Mechanismus gegen Datenverlust.
+---------------------------------------
+Nächste Schritte: Feinjustierung der Score-Übertragung (JavaScript).
