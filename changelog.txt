@@ -1,3 +1,46 @@
+🆙 **CHANGELOG - Vision Tetris v2.6**
+Datum: 29.12.2025
+
+-----------------------------------
+🤖 BOT-UPDATES:
+-----------------------------------
+✅ NEU: GitHub-Regelsystem
+   - Die Spielregeln werden nun live von GitHub geladen.
+   - Aktualisierungen sind sofort für alle User sichtbar.
+
+✅ NEU: Token-Synchronisation
+   - Vollständige Integration der WebApp-Schnittstelle.
+   - Spielgewinne (Münzen) werden nun 1:1 in Token umgewandelt.
+
+✅ FIX: Guthaben-Validierung
+   - Verbesserte Prüfung vor Spielstart (10 Token Einsatz).
+   - Automatische URL-Anpassung mit aktuellem Kontostand.
+
+-----------------------------------
+🧱 GAME-UPDATES (WEBAPP):
+-----------------------------------
+⭐ NEU: Belohnungssystem
+   - Level-Up Bonus: +8 Münzen alle 50 Punkte.
+   - Meilenstein: Einmalig +10 Münzen bei 100 Punkten.
+   - Tetris-Power: +4 Münzen für 4 gelöschte Reihen.
+
+⭐ NEU: In-Game Shop & Vision
+   - Wunschsteine für 4 Münzen kaufbar.
+   - Vision-System (+10 Sicht alle 20 Punkte).
+
+⭐ NEU: Cloud-Save
+   - Roter "Speichern & Beenden" Button überträgt alle
+     Gewinne sicher zurück in dein Bot-Guthaben.
+
+-----------------------------------
+🛠️ ADMIN-INFOS:
+-----------------------------------
+• Admin-ID: 1126176265
+• Support bei Zahlungen via @TobeXD
+
+
+
+
 ==================================================
 CHANGELOG: VISION TETRIS PRO
 Version: 1.0 (Basis-Release)
