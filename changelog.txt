@@ -47,7 +47,8 @@ VORHANDENE FUNKTIONEN IM SPIEL:
 
 ==================================================
 
-
+Tetris Extreme bot 
+@ZeroTobeTetris_bot
 
  v1.0 - Das Sterne-Update 🚀
 ---------------------------------------
