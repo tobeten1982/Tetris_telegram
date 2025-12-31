@@ -1,8 +1,25 @@
-🆙 VERSION: v.00.44 Beta
+🚀 ENTWICKLUNGSHISTORIE TETRIS EXTREME
 
-✅ NEU: Team-Verwaltung integriert (Super-Admin & Co-Admins)
-✅ NEU: Befehle /promote und /demote zur Admin-Steuerung
-✅ NEU: Rollen-Symbole in der User-Liste (👑 Super, ⭐️ Co, 👤 User)
-🛠️ FIX: Admin-Sicherheit für alle Befehle vereinheitlicht
-🛠️ FIX: Bug bei der WebApp-Synchronisierung behoben (Datenkonsistenz)
-⚙️ SYSTEM: Alle Kernfunktionen aus dem Hauptskript verifiziert
+[v.00.44 - v.00.52] BETA-PHASE
+• Erstmalige Integration der config.json zur Steuerung der Bot-Variablen.
+• Basis-System für Guthaben (💎) und Spiele-Web-App Verknüpfung.
+• Einführung der Spiel-Vorschau und einfacher Changelog-Abfrage.
+
+[v.00.53 - v.00.60] ECONOMY UPDATE
+• Implementierung des Payout-Flows: Token werden nun bei Auszahlungsanfrage reserviert (🔒).
+• Einführung von /give und /take zur manuellen Kontenverwaltung.
+• LTC-Zahlungsinfo-System mit Admin-Benachrichtigung bei Interesse.
+
+[v.00.61 - v.00.66] ADMIN & SECURITY UPDATE
+• Multi-Admin Support: Einführung von Co-Admins (/addadmin).
+• Sicherheits-Ebene: Super-Admin Schutz für ID 1126176265 fixiert.
+• Ban-System: /ban und /unban Befehle zur Nutzersperrung integriert.
+• Live-Preise: /setprice_stars und /setprice_ltc für Kursänderungen ohne Neustart.
+
+[v.00.67 - v.00.68] STABILITÄT & HILFE-SYSTEM (AKTUELL)
+• NEU: FAQ-Modul: Interaktives Hilfemenü für Endnutzer (❓ FAQ).
+• NEU: Admin-Help: Vollständiges Handbuch im Bot via /adminhelp abrufbar.
+• FIX: Kritische Syntax-Fixes in der Nachrichten-Logik (handle_messages).
+• FIX: Optimierte Navigation durch 'Zurück'-Buttons im Hauptmenü.
+
+Status: v.00.68 STABLE
