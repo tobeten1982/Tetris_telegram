@@ -1,7 +1,8 @@
-🆙 VERSION: v.00.42 Beta
+🆙 VERSION: v.00.44 Beta
 
-✅ NEU: Spiel-Vorschau Funktion integriert (Bilder/Clips vom Gameplay)
-✅ NEU: Hauptmenü um den Button "🖼️ Spiel-Vorschau" erweitert
-🛠️ OPTIMIERUNG: Medien-Links (Vorschau-Bilder/Videos) komplett in config.json ausgelagert
-🛠️ OPTIMIERUNG: Code-Struktur für schnellere Medien-Abfrage verbessert
-📦 SYSTEM: Alle Admin-Tools (v.00.41) erfolgreich migriert und auf Bugs geprüft
+✅ NEU: Team-Verwaltung integriert (Super-Admin & Co-Admins)
+✅ NEU: Befehle /promote und /demote zur Admin-Steuerung
+✅ NEU: Rollen-Symbole in der User-Liste (👑 Super, ⭐️ Co, 👤 User)
+🛠️ FIX: Admin-Sicherheit für alle Befehle vereinheitlicht
+🛠️ FIX: Bug bei der WebApp-Synchronisierung behoben (Datenkonsistenz)
+⚙️ SYSTEM: Alle Kernfunktionen aus dem Hauptskript verifiziert
